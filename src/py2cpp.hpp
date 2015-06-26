@@ -1,6 +1,8 @@
 #include <cassert>
 #include <climits>
+#include <sstream>
 #include <stdexcept>
+#include <typeinfo>
 
 #include <tuple>
 
@@ -15,7 +17,12 @@ struct CppBuilder
   T operator() (PyObject* pyo)
   {
     assert(pyo);
-    throw;
+
+    std::ostringstream oss;
+    oss << "No conversion implemented to convert PyObject* into " << typeid(T).name();
+
+    throw std::invalid_argument(oss.str());
+    return T {};
   }
 };
 
@@ -39,7 +46,7 @@ struct CppBuilder<bool>
     {
       return pyo == Py_True;
     }
-    throw;
+    throw std::invalid_argument("Not a PyBool instance");
   }
 };
 
@@ -58,7 +65,7 @@ struct CppBuilder<int>
       }
       return static_cast<int>(v);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -77,7 +84,7 @@ struct CppBuilder<unsigned int>
       }
       return static_cast<unsigned int>(v);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -91,7 +98,7 @@ struct CppBuilder<long>
     {
       return PyLong_AsLong(pyo);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -105,7 +112,7 @@ struct CppBuilder<unsigned long>
     {
       return PyLong_AsUnsignedLong(pyo);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -119,7 +126,7 @@ struct CppBuilder<long long>
     {
       return PyLong_AsLongLong(pyo);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -133,7 +140,7 @@ struct CppBuilder<unsigned long long>
     {
       return PyLong_AsUnsignedLongLong(pyo);
     }
-    throw;
+    throw std::invalid_argument("Not a PyLong instance");
   }
 };
 
@@ -151,7 +158,7 @@ struct CppBuilder<double>
     {
       return PyLong_AsDouble(pyo);
     }
-    throw;
+    throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
   }
 };
 
@@ -181,8 +188,16 @@ struct CppBuilder<std::tuple<Args...>>
         _feedCppTuple<std::tuple<Args...>, 0, Args...>(tuple, pyo);
         return tuple;
       }
+      else
+      {
+        std::ostringstream oss;
+        oss << "PyTuple length differs from asked one: "
+            << "PyTuple(" << PyTuple_Size(pyo) << ") "
+            << "and std::tuple<...>(" << sizeof...(Args) << ")";
+        throw std::length_error(oss.str());
+      }
     }
-    throw;
+    throw std::invalid_argument("Not a PyTuple instance");
   }
 };
 
