@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
   
   {
     // int
-    PyObject* pyo { PyLong_FromLong(-50) };
+    PyObject* pyo { PyInt_FromLong(-50) };
     int v { CppBuilder<int>()(pyo) };
     std::cout << "int:\t" << v << std::endl;
   }
