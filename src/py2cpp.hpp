@@ -110,7 +110,7 @@ struct CppBuilder<unsigned long>
 template <>
 struct CppBuilder<long long>
 {
-  long operator() (PyObject* pyo)
+  long long operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -124,7 +124,7 @@ struct CppBuilder<long long>
 template <>
 struct CppBuilder<unsigned long long>
 {
-  unsigned long operator() (PyObject* pyo)
+  unsigned long long operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
