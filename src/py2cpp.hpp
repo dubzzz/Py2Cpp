@@ -2,6 +2,8 @@
 #include <climits>
 #include <stdexcept>
 
+#include <tuple>
+
 #include <Python.h>
 
 namespace dubzzz {
@@ -148,6 +150,37 @@ struct CppBuilder<double>
     else if (PyLong_Check(pyo))
     {
       return PyLong_AsDouble(pyo);
+    }
+    throw;
+  }
+};
+
+template <class TUPLE, std::size_t pos>
+void _feedCppTuple(TUPLE& tuple, PyObject* root)
+{}
+
+template <class TUPLE, std::size_t pos, class T, class... Args>
+void _feedCppTuple(TUPLE& tuple, PyObject* root)
+{
+
+  std::get<pos>(tuple) = CppBuilder<T>()(PyTuple_GetItem(root, pos));
+  _feedCppTuple<TUPLE, pos +1, Args...>(tuple, root);
+}
+
+
+template <class... Args>
+struct CppBuilder<std::tuple<Args...>>
+{
+  std::tuple<Args...> operator() (PyObject* pyo)
+  {
+    if (PyTuple_Check(pyo))
+    {
+      if (PyTuple_Size(pyo) == sizeof...(Args))
+      {
+        std::tuple<Args...> tuple { std::make_tuple(Args()...) };
+        _feedCppTuple<std::tuple<Args...>, 0, Args...>(tuple, pyo);
+        return tuple;
+      }
     }
     throw;
   }

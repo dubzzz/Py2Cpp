@@ -1,6 +1,8 @@
 #include <climits>
 #include <iostream>
 
+#include <tuple>
+
 #include <Python.h>
 #include "py2cpp.hpp"
 
@@ -74,6 +76,17 @@ int main(int argc, char* argv[])
     PyObject* pyo2 { PyFloat_FromDouble(1.1) };
     double v2 { CppBuilder<double>()(pyo2) };
     std::cout << "double:\t" << v2 << std::endl;
+  }
+
+  {
+    // tuple<int, int, double>
+    PyObject* pyo {
+        PyTuple_Pack(3,
+          PyLong_FromLong(-50),
+          PyLong_FromLong(750),
+          PyFloat_FromDouble(1.1)) };
+    std::tuple<int,int,double> out { CppBuilder<std::tuple<int,int,double>>()(pyo) };
+    std::cout << "tuple<int,int,double>:\t" << std::get<0>(out) << ", " << std::get<1>(out) << ", " << std::get<2>(out) << std::endl;  
   }
 
   return 0;
