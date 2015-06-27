@@ -1,4 +1,7 @@
 # Py2Cpp
+
+## Metaprogramming serving Py->C++ and C++->Py
+
 This library makes it easy to convert Python objects (Python C API) to standard C++ datatypes. It is based on a single header file that uses templates and variadic templates in order to perform the conversions.
 
 ## How to use it?
