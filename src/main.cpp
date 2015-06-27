@@ -1,6 +1,7 @@
 #include <climits>
 #include <iostream>
 
+#include <map>
 #include <set>
 #include <tuple>
 #include <vector>
@@ -125,6 +126,20 @@ int main(int argc, char* argv[])
       }
       std::cout << std::endl;
     }
+  }
+  
+  {
+    // map<double,int>
+    PyObject* pyo { PyDict_New() };
+    PyDict_SetItem(pyo, PyFloat_FromDouble(1.1), PyLong_FromLong(9));
+    PyDict_SetItem(pyo, PyFloat_FromDouble(8.5), PyLong_FromLong(2));
+    std::map<double,int> out { CppBuilder<std::map<double,int>>()(pyo) };
+    std::cout << "map<double,int>:\t";
+    for (auto c : out)
+    {
+      std::cout << "(" << c.first << ", " << c.second << "), ";
+    }
+    std::cout << std::endl;
   }
 
   return 0;

@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include <map>
 #include <set>
 #include <tuple>
 #include <vector>
@@ -283,6 +284,26 @@ struct CppBuilder<std::set<T>>
       return s;
     }
     throw std::invalid_argument("Not a PyList instance");
+  }
+};
+
+template <class K, class T>
+struct CppBuilder<std::map<K,T>>
+{
+  std::map<K,T> operator() (PyObject* pyo)
+  {
+    if (PyDict_Check(pyo))
+    {
+      std::map<K,T> dict;
+      PyObject *key, *value;
+      Py_ssize_t pos = 0;
+      while (PyDict_Next(pyo, &pos, &key, &value))
+      {
+        dict[CppBuilder<K>()(key)] = CppBuilder<T>()(value);
+      }
+      return dict;
+    }
+    throw std::invalid_argument("Not a PyDict instance");
   }
 };
 
