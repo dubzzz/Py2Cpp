@@ -278,6 +278,7 @@ struct CppBuilder<std::set<T>>
       for (PyObject* popped : backup)
       {
         PySet_Add(pyo, popped);
+        Py_DECREF(popped);
       }
       return s;
     }
