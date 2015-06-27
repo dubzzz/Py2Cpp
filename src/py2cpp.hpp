@@ -11,7 +11,6 @@
 #include <set>
 #include <string>
 #include <tuple>
-#include <vector>
 
 #include <Python.h>
 
@@ -19,19 +18,7 @@ namespace dubzzz {
 namespace Py2Cpp {
 
 template <class T>
-struct CppBuilder
-{
-  T operator() (PyObject* pyo)
-  {
-    assert(pyo);
-
-    std::ostringstream oss;
-    oss << "No conversion implemented to convert PyObject* into " << typeid(T).name();
-
-    throw std::invalid_argument(oss.str());
-    return T {};
-  }
-};
+struct CppBuilder;
 
 template <>
 struct CppBuilder<PyObject*>
@@ -267,19 +254,30 @@ struct CppBuilder<std::tuple<Args...>>
   }
 };
 
-template <class T>
-struct CppBuilder<std::vector<T>>
+/**
+ * VECTOR has to have the following characteristics:
+ * 
+ * (constructor):
+ *    VECTOR(size_type count)
+ *    build a vector of size count
+ *
+ * ::begin()
+ * ::end()
+ * ::iterator compatible with ++it
+ */
+template <class VECTOR>
+struct CppBuilder
 {
-  std::vector<T> operator() (PyObject* pyo)
+  VECTOR operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyList_Check(pyo))
     {
-      long size { PyList_Size(pyo) };
-      std::vector<T> v(size);
-      for (long i { 0 } ; i != size ; ++i)
+      unsigned int i { 0 };
+      VECTOR v(PyList_Size(pyo));
+      for (typename VECTOR::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
       {
-        v[i] = CppBuilder<T>()(PyList_GetItem(pyo, i));
+        *it = CppBuilder<typename VECTOR::value_type>()(PyList_GetItem(pyo, i));
       }
       return v;
     }
