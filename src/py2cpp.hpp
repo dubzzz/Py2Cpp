@@ -283,7 +283,7 @@ struct CppBuilder<std::set<T>>
       }
       return s;
     }
-    throw std::invalid_argument("Not a PyList instance");
+    throw std::invalid_argument("Not a PySet instance");
   }
 };
 
