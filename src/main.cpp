@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <tuple>
+#include <vector>
 
 #include <Python.h>
 #include "py2cpp.hpp"
@@ -87,6 +88,16 @@ int main(int argc, char* argv[])
           PyFloat_FromDouble(1.1)) };
     std::tuple<int,int,double> out { CppBuilder<std::tuple<int,int,double>>()(pyo) };
     std::cout << "tuple<int,int,double>:\t" << std::get<0>(out) << ", " << std::get<1>(out) << ", " << std::get<2>(out) << std::endl;  
+  }
+  
+  {
+    // vector<int>
+    PyObject* pyo { PyList_New(0) };
+    PyList_Append(pyo, PyLong_FromLong(0));
+    PyList_Append(pyo, PyLong_FromLong(8));
+    PyList_Append(pyo, PyLong_FromLong(3));
+    std::vector<int> out { CppBuilder<std::vector<int>>()(pyo) };
+    std::cout << "vector<int>:\t" << out[0] << ", " << out[1] << ", " << out[2] << std::endl;
   }
 
   return 0;

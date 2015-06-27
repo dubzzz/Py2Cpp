@@ -5,6 +5,7 @@
 #include <typeinfo>
 
 #include <tuple>
+#include <vector>
 
 #include <Python.h>
 
@@ -212,7 +213,6 @@ void _feedCppTuple(TUPLE& tuple, PyObject* root)
   _feedCppTuple<TUPLE, pos +1, Args...>(tuple, root);
 }
 
-
 template <class... Args>
 struct CppBuilder<std::tuple<Args...>>
 {
@@ -236,6 +236,25 @@ struct CppBuilder<std::tuple<Args...>>
       }
     }
     throw std::invalid_argument("Not a PyTuple instance");
+  }
+};
+
+template <class T>
+struct CppBuilder<std::vector<T>>
+{
+  std::vector<T> operator() (PyObject* pyo)
+  {
+    if (PyList_Check(pyo))
+    {
+      long size { PyList_Size(pyo) };
+      std::vector<T> v(size);
+      for (unsigned i { 0 } ; i != size ; ++i)
+      {
+        v[i] = CppBuilder<T>()(PyList_GetItem(pyo, i));
+      }
+      return v;
+    }
+    throw std::invalid_argument("Not a PyList instance");
   }
 };
 
