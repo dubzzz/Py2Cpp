@@ -215,13 +215,13 @@ struct CppBuilder<std::string>
     assert(pyo);
     if (PyUnicode_Check(pyo))
     {
-      /**
-       * Since: Python 3.3
-       * Py_ssize_t size {};
-       * char* str { PyUnicode_AsUTF8AndSize(pyo, &size) };
-       */
-      long unsigned int size { PyUnicode_GET_DATA_SIZE(pyo) }; // depreciated in 3.3
-      const char* str { PyUnicode_AS_DATA(pyo) }; // depreciated in 3.3
+#if PY_MAJOR_VERSION >=3 and PY_MINOR_VERSION >=3
+      long unsigned int size {};
+      const char* str { PyUnicode_AsUTF8AndSize(pyo, &size) };
+#else
+      long unsigned int size { PyUnicode_GET_DATA_SIZE(pyo) }; // depreciated since 3.3
+      const char* str { PyUnicode_AS_DATA(pyo) }; // depreciated since 3.3
+#endif
       return std::string(str, size);
     }
     throw std::invalid_argument("Not a PyUnicode instance");
