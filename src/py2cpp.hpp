@@ -259,7 +259,7 @@ struct CppBuilder<std::tuple<Args...>>
  * 
  * (constructor):
  *    VECTOR(size_type count)
- *    build a vector of size count
+ *    build a VECTOR of size count
  *
  * ::begin()
  * ::end()
