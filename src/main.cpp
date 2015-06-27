@@ -148,6 +148,31 @@ int main(int argc, char* argv[])
     }
     std::cout << std::endl;
   }
+  
+  {
+    PyObject* pytup {
+        PyTuple_Pack(3,
+          PyLong_FromLong(-50),
+          PyLong_FromLong(750),
+          PyFloat_FromDouble(1.1)) };
+    PyObject* pyvec { PyList_New(0) };
+    PyList_Append(pyvec, PyLong_FromLong(0));
+    PyList_Append(pyvec, PyLong_FromLong(8));
+    PyList_Append(pyvec, PyLong_FromLong(3));
+    PyObject* pyo { PyDict_New() };
+    PyDict_SetItem(pyo, pytup, pyvec);
+    
+    std::map<std::tuple<int,int,double>,std::vector<int>> out { CppBuilder<std::map<std::tuple<int,int,double>,std::vector<int>>>()(pyo) };
+    for (auto inmap : out)
+    {
+      std::cout << "(" << std::get<0>(inmap.first) << ", " << std::get<1>(inmap.first) << ", " << std::get<2>(inmap.first) << "): [";
+      for (auto invec : inmap.second)
+      {
+        std::cout << invec << ", ";
+      }
+      std::cout << "]" << std::endl;
+    }
+  }
 
   return 0;
 }
