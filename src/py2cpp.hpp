@@ -1,3 +1,6 @@
+#ifndef __PY2CPP_HPP__
+#define __PY2CPP_HPP__
+
 #include <cassert>
 #include <climits>
 #include <sstream>
@@ -335,4 +338,6 @@ struct CppBuilder<std::map<K,T>>
 
 }
 }
+
+#endif
 
