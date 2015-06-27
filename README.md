@@ -18,6 +18,7 @@ For the moment, the conversion from Python to C++ can generate combinations of t
 - ```std::string```
 - ```std::map``` -- from ```dict```
 - ```std::set``` -- from ```set```
+- ```std::tuple``` -- from ```tuple```
 - ```std::vector``` -- from ```list```
 
 Converting a PyObject* to a C++ element is as simple as: ```T my_cpp_elt { CppBuilder<T>()(py_object) };``` where ```T``` should be replace by the conjonction of datatypes you want.
