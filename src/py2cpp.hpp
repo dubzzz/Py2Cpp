@@ -6,6 +6,7 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -200,6 +201,27 @@ struct CppBuilder<double>
       return PyInt_AS_LONG(pyo);
     }
     throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
+  }
+};
+
+template <>
+struct CppBuilder<std::string>
+{
+  std::string operator() (PyObject* pyo)
+  {
+    assert(pyo);
+    if (PyUnicode_Check(pyo))
+    {
+      /**
+       * Since: Python 3.3
+       * Py_ssize_t size {};
+       * char* str { PyUnicode_AsUTF8AndSize(pyo, &size) };
+       */
+      long unsigned int size { PyUnicode_GET_DATA_SIZE(pyo) }; // depreciated in 3.3
+      const char* str { PyUnicode_AS_DATA(pyo) }; // depreciated in 3.3
+      return std::string(str, size);
+    }
+    throw std::invalid_argument("Not a PyUnicode instance");
   }
 };
 

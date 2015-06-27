@@ -80,6 +80,13 @@ int main(int argc, char* argv[])
     double v2 { CppBuilder<double>()(pyo2) };
     std::cout << "double:\t" << v2 << std::endl;
   }
+  
+  {
+    // std::string
+    PyObject* pyo { PyUnicode_FromString("This is a test") };
+    std::string s { CppBuilder<std::string>()(pyo) };
+    std::cout << "string:\t" << s << std::endl;
+  }
 
   {
     // tuple<int, int, double>
