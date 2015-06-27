@@ -242,6 +242,7 @@ struct CppBuilder<std::tuple<Args...>>
 {
   std::tuple<Args...> operator() (PyObject* pyo)
   {
+    assert(pyo);
     if (PyTuple_Check(pyo))
     {
       if (PyTuple_Size(pyo) == sizeof...(Args))
@@ -268,6 +269,7 @@ struct CppBuilder<std::vector<T>>
 {
   std::vector<T> operator() (PyObject* pyo)
   {
+    assert(pyo);
     if (PyList_Check(pyo))
     {
       long size { PyList_Size(pyo) };
@@ -287,6 +289,7 @@ struct CppBuilder<std::set<T>>
 {
   std::set<T> operator() (PyObject* pyo)
   {
+    assert(pyo);
     if (PySet_Check(pyo))
     {
       long size { PySet_Size(pyo) };
@@ -314,6 +317,7 @@ struct CppBuilder<std::map<K,T>>
 {
   std::map<K,T> operator() (PyObject* pyo)
   {
+    assert(pyo);
     if (PyDict_Check(pyo))
     {
       std::map<K,T> dict;
