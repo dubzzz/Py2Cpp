@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include <set>
 #include <tuple>
 #include <vector>
 
@@ -248,11 +249,37 @@ struct CppBuilder<std::vector<T>>
     {
       long size { PyList_Size(pyo) };
       std::vector<T> v(size);
-      for (unsigned i { 0 } ; i != size ; ++i)
+      for (long i { 0 } ; i != size ; ++i)
       {
         v[i] = CppBuilder<T>()(PyList_GetItem(pyo, i));
       }
       return v;
+    }
+    throw std::invalid_argument("Not a PyList instance");
+  }
+};
+
+template <class T>
+struct CppBuilder<std::set<T>>
+{
+  std::set<T> operator() (PyObject* pyo)
+  {
+    if (PySet_Check(pyo))
+    {
+      long size { PySet_Size(pyo) };
+      std::vector<PyObject*> backup(size);
+      std::set<T> s;
+      for (long i { 0 } ; i != size ; ++i)
+      {
+        PyObject* popped { PySet_Pop(pyo) };
+        backup[i] = popped;
+        s.insert(CppBuilder<T>()(popped));
+      }
+      for (PyObject* popped : backup)
+      {
+        PySet_Add(pyo, popped);
+      }
+      return s;
     }
     throw std::invalid_argument("Not a PyList instance");
   }

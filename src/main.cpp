@@ -1,6 +1,7 @@
 #include <climits>
 #include <iostream>
 
+#include <set>
 #include <tuple>
 #include <vector>
 
@@ -98,6 +99,32 @@ int main(int argc, char* argv[])
     PyList_Append(pyo, PyLong_FromLong(3));
     std::vector<int> out { CppBuilder<std::vector<int>>()(pyo) };
     std::cout << "vector<int>:\t" << out[0] << ", " << out[1] << ", " << out[2] << std::endl;
+  }
+  
+  {
+    // set<int>
+    PyObject* pyo { PySet_New(NULL) };
+    PySet_Add(pyo, PyLong_FromLong(3));
+    PySet_Add(pyo, PyLong_FromLong(6));
+    PySet_Add(pyo, PyLong_FromLong(9));
+    {
+      std::set<int> out { CppBuilder<std::set<int>>()(pyo) };
+      std::cout << "set<int>:\t";
+      for (int i : out)
+      {
+        std::cout << i << ", ";
+      }
+      std::cout << std::endl;
+    }
+    {
+      std::set<int> out { CppBuilder<std::set<int>>()(pyo) };
+      std::cout << "set<int>:\t";
+      for (int i : out)
+      {
+        std::cout << i << ", ";
+      }
+      std::cout << std::endl;
+    }
   }
 
   return 0;
