@@ -200,18 +200,36 @@ struct CppBuilder<std::string>
   std::string operator() (PyObject* pyo)
   {
     assert(pyo);
-    if (PyUnicode_Check(pyo))
+    if (PyString_Check(pyo) || PyUnicode_Check(pyo))
     {
-#if PY_MAJOR_VERSION >=3 and PY_MINOR_VERSION >=3
-      long unsigned int size {};
-      const char* str { PyUnicode_AsUTF8AndSize(pyo, &size) };
-#else
-      long unsigned int size { PyUnicode_GET_DATA_SIZE(pyo) }; // depreciated since 3.3
-      const char* str { PyUnicode_AS_DATA(pyo) }; // depreciated since 3.3
-#endif
-      return std::string(str, size);
+      return std::string(PyString_AsString(pyo), PyString_Size(pyo));
     }
-    throw std::invalid_argument("Not a PyUnicode instance");
+    throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
+  }
+};
+
+template <>
+struct CppBuilder<std::wstring>
+{
+  std::wstring operator() (PyObject* pyo)
+  {
+    assert(pyo);
+    if (PyString_Check(pyo))
+    {
+      const char* str { PyString_AsString(pyo) };
+      long unsigned int size { PyString_Size(pyo) };
+      wchar_t wstr[size];
+      mbstowcs(wstr, str, size);
+      return std::wstring(wstr, size);
+    }
+    else if (PyUnicode_Check(pyo))
+    {
+      long unsigned int size { PyUnicode_GetSize(pyo) };
+      wchar_t wstr[size];
+      PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
+      return std::wstring(wstr, size);
+    }
+    throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
 };
 
