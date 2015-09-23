@@ -20,41 +20,48 @@ void operator() (PyObject* pyo)
 TEST(CppBuilder_bool, True)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("True", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(true, CppBuilder<bool>()(pyo.get()));
 }
 TEST(CppBuilder_bool, False)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("False", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(true, !CppBuilder<bool>()(pyo.get()));
 }
 
 TEST(CppBuilder_int, AnyValue)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<int>()(pyo.get()));
 }
 
 TEST(CppBuilder_string, String)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
 }
 
 TEST(CppBuilder_string, Unicode)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
 }
 
 TEST(CppBuilder_wstring, String)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
 }
 
 TEST(CppBuilder_wstring, Unicode)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
 }
 
@@ -70,6 +77,7 @@ TEST(CppBuilder_mix, AnyValue)
           'y': 2, \
         }], \
       }", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
   
   std::map<std::string, std::vector<std::map<std::string, int>>> elt;
   std::vector<std::map<std::string, int>> positions;
