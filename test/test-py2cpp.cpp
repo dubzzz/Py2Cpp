@@ -51,6 +51,14 @@ TEST(CppBuilder_string, Unicode)
   EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
 }
 
+TEST(CppBuilder_string, UnicodeExotic)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(
+      "u'\u15c7\u25d8\u0034\u2b15'", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ("\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::string>()(pyo.get()));
+}
+
 TEST(CppBuilder_wstring, String)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
@@ -63,6 +71,14 @@ TEST(CppBuilder_wstring, Unicode)
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
+}
+
+TEST(CppBuilder_wstring, UnicodeExotic)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(
+      "u'\u15c7\u25d8\u0034\u2b15'", Py_eval_input, py_dict, NULL) }; //utf-16
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(L"\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::wstring>()(pyo.get()));
 }
 
 TEST(CppBuilder_mix, AnyValue)

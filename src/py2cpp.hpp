@@ -200,9 +200,26 @@ struct CppBuilder<std::string>
   std::string operator() (PyObject* pyo)
   {
     assert(pyo);
-    if (PyString_Check(pyo) || PyUnicode_Check(pyo))
+    if (PyString_Check(pyo))
     {
-      return std::string(PyString_AsString(pyo), PyString_Size(pyo));
+      long int size { PyString_Size(pyo) };
+      if (size < 0)
+      {
+        throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
+      }
+      return std::string(PyString_AsString(pyo), size);
+    }
+    else if (PyUnicode_Check(pyo))
+    {
+      long int size { PyUnicode_GetSize(pyo) };
+      if (size < 0)
+      {
+        throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
+      }
+      wchar_t wstr[size];
+      PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
+      std::wstring wide(wstr, size);
+      return std::string(wide.begin(), wide.end());
     }
     throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
@@ -217,14 +234,22 @@ struct CppBuilder<std::wstring>
     if (PyString_Check(pyo))
     {
       const char* str { PyString_AsString(pyo) };
-      long unsigned int size { PyString_Size(pyo) };
+      long int size { PyString_Size(pyo) };
+      if (size < 0)
+      {
+        throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
+      }
       wchar_t wstr[size];
       mbstowcs(wstr, str, size);
       return std::wstring(wstr, size);
     }
     else if (PyUnicode_Check(pyo))
     {
-      long unsigned int size { PyUnicode_GetSize(pyo) };
+      long int size { PyUnicode_GetSize(pyo) };
+      if (size < 0)
+      {
+        throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
+      }
       wchar_t wstr[size];
       PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
       return std::wstring(wstr, size);
