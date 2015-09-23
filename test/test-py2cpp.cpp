@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include <climits>
+#include <memory>
 #include <Python.h>
 #include "py2cpp.hpp"
 
@@ -8,57 +9,58 @@ using namespace dubzzz::Py2Cpp;
 PyObject *py_main;
 PyObject *py_dict;
 
+struct decref
+{
+void operator() (PyObject* pyo)
+{
+  Py_DECREF(pyo);
+}
+};
+
 TEST(CppBuilder_bool, True)
 {
-  PyObject* pyo { PyRun_String("True", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ(true, CppBuilder<bool>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("True", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ(true, CppBuilder<bool>()(pyo.get()));
 }
 TEST(CppBuilder_bool, False)
 {
-  PyObject* pyo { PyRun_String("False", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ(true, !CppBuilder<bool>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("False", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ(true, !CppBuilder<bool>()(pyo.get()));
 }
 
 TEST(CppBuilder_int, AnyValue)
 {
-  PyObject* pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ(5, CppBuilder<int>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ(5, CppBuilder<int>()(pyo.get()));
 }
 
 TEST(CppBuilder_string, String)
 {
-  PyObject* pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ("hello", CppBuilder<std::string>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
 }
 
 TEST(CppBuilder_string, Unicode)
 {
-  PyObject* pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ("hello", CppBuilder<std::string>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
 }
 
 TEST(CppBuilder_wstring, String)
 {
-  PyObject* pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
 }
 
 TEST(CppBuilder_wstring, Unicode)
 {
-  PyObject* pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
-  EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo));
-  Py_DECREF(pyo);
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, py_dict, NULL) };
+  EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
 }
 
 TEST(CppBuilder_mix, AnyValue)
 {
-  PyObject* pyo { PyRun_String("{ \
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{ \
         'positions':[ \
         { \
           'x': 5, \
@@ -76,8 +78,7 @@ TEST(CppBuilder_mix, AnyValue)
   elt["positions"] = positions;
   
   auto Functor = CppBuilder<std::map<std::string, std::vector<std::map<std::string, int>>>>();
-  EXPECT_EQ(elt, Functor(pyo));
-  Py_DECREF(pyo);
+  EXPECT_EQ(elt, Functor(pyo.get()));
 }
 
 int main(int argc, char **argv)
