@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags)
+CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g")
 LDFLAGS=$(shell python-config --ldflags)
 CGTEST=-I/usr/local/include
 LDGTEST=-L/usr/local/lib -lgtest
