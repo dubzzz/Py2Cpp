@@ -15,7 +15,7 @@ For the moment, the conversion from Python to C++ can generate combinations of t
 - ```long``` and ```unsigned long```
 - ```long long``` and ```unsigned long long```
 - ```double```
-- ```std::string```
+- ```std::string``` and ```std::wstring```
 - ```std::map``` -- from ```dict```
 - ```std::set``` -- from ```set```
 - ```std::tuple``` -- from ```tuple```
