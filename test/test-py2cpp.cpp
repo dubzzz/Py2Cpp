@@ -1,8 +1,8 @@
+#include <Python.h>
 #include "gtest/gtest.h"
 
 #include <climits>
 #include <memory>
-#include <Python.h>
 #include "py2cpp.hpp"
 
 using namespace dubzzz::Py2Cpp;

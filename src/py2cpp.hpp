@@ -1,6 +1,8 @@
 #ifndef __PY2CPP_HPP__
 #define __PY2CPP_HPP__
 
+#include <Python.h>
+
 #include <cassert>
 #include <climits>
 #include <sstream>
@@ -11,8 +13,6 @@
 #include <set>
 #include <string>
 #include <tuple>
-
-#include <Python.h>
 
 namespace dubzzz {
 namespace Py2Cpp {

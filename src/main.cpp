@@ -1,3 +1,5 @@
+#include <Python.h>
+
 #include <climits>
 #include <iostream>
 
@@ -6,7 +8,6 @@
 #include <tuple>
 #include <vector>
 
-#include <Python.h>
 #include "py2cpp.hpp"
 
 using namespace dubzzz::Py2Cpp;
