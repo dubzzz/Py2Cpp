@@ -3,6 +3,7 @@
 
 #include <climits>
 #include <memory>
+#include <sstream>
 #include "py2cpp.hpp"
 
 using namespace dubzzz::Py2Cpp;
@@ -34,11 +35,50 @@ TEST(CppBuilder_bool, False)
 
 /** int **/
 
-TEST(CppBuilder_int, AnyValue)
+TEST(CppBuilder_int, Zero)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(0, CppBuilder<int>()(pyo.get()));
+}
+
+TEST(CppBuilder_int, Any)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<int>()(pyo.get()));
+}
+
+TEST(CppBuilder_int, MinPositive)
+{
+  std::ostringstream out; out << INT_MIN;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(INT_MIN, CppBuilder<int>()(pyo.get()));
+}
+
+TEST(CppBuilder_int, MaxPositive)
+{
+  std::ostringstream out; out << INT_MAX;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(INT_MAX, CppBuilder<int>()(pyo.get()));
+}
+
+TEST(CppBuilder_int, LessThanMinPositive)
+{
+  std::ostringstream out; out << static_cast<long long>(INT_MIN) -1;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  ASSERT_THROW(CppBuilder<int>()(pyo.get()), std::overflow_error);
+}
+
+TEST(CppBuilder_int, MoreThanMaxPositive)
+{
+  std::ostringstream out; out << static_cast<long long>(INT_MAX) +1;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  ASSERT_THROW(CppBuilder<int>()(pyo.get()), std::overflow_error);
 }
 
 /** std::string **/
