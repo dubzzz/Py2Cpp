@@ -17,6 +17,8 @@ void operator() (PyObject* pyo)
 }
 };
 
+/** bool **/
+
 TEST(CppBuilder_bool, True)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("True", Py_eval_input, py_dict, NULL) };
@@ -30,12 +32,16 @@ TEST(CppBuilder_bool, False)
   EXPECT_EQ(true, !CppBuilder<bool>()(pyo.get()));
 }
 
+/** int **/
+
 TEST(CppBuilder_int, AnyValue)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<int>()(pyo.get()));
 }
+
+/** std::string **/
 
 TEST(CppBuilder_string, String)
 {
@@ -59,6 +65,8 @@ TEST(CppBuilder_string, UnicodeExotic)
   EXPECT_EQ("\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::string>()(pyo.get()));
 }
 
+/** std::wstring **/
+
 TEST(CppBuilder_wstring, String)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, py_dict, NULL) };
@@ -80,6 +88,8 @@ TEST(CppBuilder_wstring, UnicodeExotic)
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::wstring>()(pyo.get()));
 }
+
+/** MISC **/
 
 TEST(CppBuilder_mix, AnyValue)
 {
