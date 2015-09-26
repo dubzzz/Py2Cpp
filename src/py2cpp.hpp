@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <climits>
+#include <functional>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -429,6 +430,56 @@ struct CppBuilder<std::map<K,T>>
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
+
+template <class OBJ, class... Args>
+struct FromTuple
+{};
+
+template <class OBJ, class TUPLE, std::size_t pos>
+void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{}
+
+template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
+void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{
+  T value { CppBuilder<T>()(PyTuple_GetItem(root, pos)) };
+  std::get<pos>(callbacks)(obj, value);
+  _feedFromTuple<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
+}
+
+template <class OBJ, class... Args>
+struct CppBuilder<FromTuple<OBJ, Args...>>
+{
+  std::tuple<std::function<void(OBJ&, Args)>...> callbacks;
+  
+  CppBuilder(std::function<void(OBJ&, Args)>... args)
+    : callbacks(std::make_tuple(args...))
+  {}
+
+  OBJ operator() (PyObject* pyo)
+  {
+    assert(pyo);
+    if (PyTuple_Check(pyo))
+    {
+      if (PyTuple_Size(pyo) == sizeof...(Args))
+      {
+        OBJ obj;
+        _feedFromTuple<OBJ, std::tuple<std::function<void(OBJ&, Args)>...>, 0, Args...>(obj, callbacks, pyo);
+        return obj;
+      }
+      else
+      {
+        std::ostringstream oss;
+        oss << "PyTuple length differs from asked one: "
+            << "PyTuple(" << PyTuple_Size(pyo) << ") "
+            << "and FromTuple<...>(" << sizeof...(Args) << ")";
+        throw std::length_error(oss.str());
+      }
+    }
+    throw std::invalid_argument("Not a PyTuple instance");
+  }
+};
+
 
 }
 }

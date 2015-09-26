@@ -527,6 +527,35 @@ TEST(CppBuilder_map, FromDict)
   EXPECT_FALSE(uncaught_exception());
 }
 
+/** struct/class **/
+
+namespace
+{
+  class Point
+  {
+    int x, y, z;
+  public:
+    Point() : x(0), y(0), z(0) {}
+    Point(int x, int y, int z) : x(x), y(y), z(z) {}
+    Point(const Point&) = default;
+    bool operator==(const Point& p) const {return x == p.x && y == p.y && z == p.z;}
+    void setX(int x) {this->x = x;}
+    void setY(int y) {this->y = y;}
+    void setZ(int z) {this->z = z;}
+  };
+}
+
+TEST(CppBuilder_struct, FromTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 3, 4)", Py_eval_input, py_dict, NULL) };
+  Point expected { 1, 3, 4 };
+  ASSERT_NE(nullptr, pyo.get());
+
+  auto Functor = CppBuilder<FromTuple<Point, int, int, int>>(&Point::setX, &Point::setY, &Point::setZ);
+  EXPECT_EQ(expected, Functor(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
 /** MISC **/
 
 TEST(CppBuilder_mix, AnyValue)
