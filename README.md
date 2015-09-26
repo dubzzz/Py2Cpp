@@ -30,7 +30,7 @@ Converting a PyObject* to a C++ element is as simple as: ```T my_cpp_elt { CppBu
 For instance, if a PyObject* contains a ```dict(tuple(int,int,double),list(int))```, you can easily convert it into C++ datatypes by using:
 
 ```
-std::map<std::tuple<int,int,double>,std::vector<int>> out { CppBuilder<std::map<std::tuple<int,int,double>,std::vector<int>>>()(py_object) };
+auto out { CppBuilder<std::map<std::tuple<int,int,double>,std::vector<int>>>()(py_object) };
 ```
 
 #### More advance usages: fill your own struct/class
