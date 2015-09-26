@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <climits>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <typeinfo>
@@ -220,11 +221,23 @@ struct CppBuilder<double>
     assert(pyo);
     if (PyFloat_Check(pyo))
     {
-      return PyFloat_AS_DOUBLE(pyo);
+      double value { PyFloat_AsDouble(pyo) }; // PyFloat is a double
+      if (value ==  INFINITY || value == -INFINITY)
+      {
+        PyErr_Clear();
+        throw std::overflow_error("Out of <double> boundaries");
+      }
+      return value;
     }
     else if (PyLong_Check(pyo))
     {
-      return PyLong_AsDouble(pyo);
+      double value { PyLong_AsDouble(pyo) };
+      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+      {
+        PyErr_Clear();
+        throw std::overflow_error("Out of <double> boundaries");
+      }
+      return value;
     }
     else if (PyInt_Check(pyo))
     {

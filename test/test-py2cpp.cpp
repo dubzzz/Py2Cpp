@@ -1,6 +1,7 @@
 #include <Python.h>
 #include "gtest/gtest.h"
 
+#include <cfloat>
 #include <climits>
 #include <memory>
 #include <sstream>
@@ -358,6 +359,61 @@ TEST(CppBuilder_ullong, MoreThanMaxValue)
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** double **/
+
+TEST(CppBuilder_double, Zero)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_NEAR(0, CppBuilder<double>()(pyo.get()), DBL_MIN); // PyFloat_GetMin() == DBL_MIN
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_double, Any)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("3.14", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_NEAR(3.14, CppBuilder<double>()(pyo.get()), 2*DBL_EPSILON);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_double, MinValue)
+{
+  std::ostringstream out; out << DBL_MIN;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_NEAR(PyFloat_GetMin(), CppBuilder<double>()(pyo.get()), DBL_MIN);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_double, MaxValue)
+{
+  std::ostringstream out; out << DBL_MAX;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  const double tolerancy { pow(2, DBL_MAX_EXP) };
+  EXPECT_NEAR(PyFloat_GetMax(), CppBuilder<double>()(pyo.get()), tolerancy);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_double, MoreThanMaxValue)
+{
+  std::ostringstream out; out << DBL_MAX << "*2";
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<double>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_double, MoreThanMaxValueNegative)
+{
+  std::ostringstream out; out << DBL_MAX << "*(-2)";
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<double>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
 }
 
