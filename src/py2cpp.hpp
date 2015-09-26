@@ -94,7 +94,7 @@ struct CppBuilder<unsigned int>
     }
     else if (PyInt_Check(pyo))
     {
-      long v { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULONG_MAX
+      long v { PyInt_AsLong(pyo) }; // PyInt is a long
       if (v < 0 || v > UINT_MAX)
       {
         throw std::overflow_error("Out of <unsigned int> boundaries");
@@ -166,11 +166,17 @@ struct CppBuilder<long long>
     assert(pyo);
     if (PyLong_Check(pyo))
     {
-      return PyLong_AsLongLong(pyo);
+      long long value { PyLong_AsLongLong(pyo) };
+      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+      {
+        PyErr_Clear();
+        throw std::overflow_error("Out of <long long> boundaries");
+      }
+      return value;
     }
     else if (PyInt_Check(pyo))
     {
-      return PyInt_AS_LONG(pyo);
+      return static_cast<long long>(PyInt_AsLong(pyo));
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
@@ -184,11 +190,23 @@ struct CppBuilder<unsigned long long>
     assert(pyo);
     if (PyLong_Check(pyo))
     {
-      return PyLong_AsUnsignedLongLong(pyo);
+      unsigned long long value { PyLong_AsUnsignedLongLong(pyo) };
+      if (!! PyErr_Occurred()
+          && (!! PyErr_ExceptionMatches(PyExc_OverflowError) || !! PyErr_ExceptionMatches(PyExc_TypeError)))
+      {
+        PyErr_Clear();
+        throw std::overflow_error("Out of <unsigned long long> boundaries");
+      }
+      return value;
     }
     else if (PyInt_Check(pyo))
     {
-      return PyInt_AsUnsignedLongLongMask(pyo);
+      long value { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULLONG_MAX
+      if (value < 0)
+      {
+        throw std::overflow_error("Out of <unsigned long long> boundaries");
+      }
+      return static_cast<unsigned long long>(value);
     }
     throw std::invalid_argument("Not a PyLong instance");
   }

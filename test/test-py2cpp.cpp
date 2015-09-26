@@ -254,6 +254,113 @@ TEST(CppBuilder_ulong, MoreThanMaxValue)
   EXPECT_FALSE(uncaught_exception());
 }
 
+/** long long **/
+
+TEST(CppBuilder_llong, Zero)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(0, CppBuilder<long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_llong, Any)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(5, CppBuilder<long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_llong, MinValue)
+{
+  std::ostringstream out; out << LLONG_MIN;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(LLONG_MIN, CppBuilder<long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_llong, MaxValue)
+{
+  std::ostringstream out; out << LLONG_MAX;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(LLONG_MAX, CppBuilder<long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_llong, LessThanMinValue)
+{
+  std::ostringstream out; out << LLONG_MIN << "-1";
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_llong, MoreThanMaxValue)
+{
+  std::ostringstream out; out << LLONG_MAX << "+1";
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** unsigned long **/
+
+TEST(CppBuilder_ullong, Zero)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(0, CppBuilder<unsigned long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_ullong, Any)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(5, CppBuilder<unsigned long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_ullong, MaxValue)
+{
+  std::ostringstream out; out << ULLONG_MAX;
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(ULLONG_MAX, CppBuilder<unsigned long long>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_ullong, LessThanZero)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("-1", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_ullong, FarLessThanZero)
+{
+  std::ostringstream out; out << LONG_MIN << "-1"; // in order to get a PyLong
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_ullong, MoreThanMaxValue)
+{
+  std::ostringstream out; out << ULLONG_MAX << "+1";
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
 /** std::string **/
 
 TEST(CppBuilder_string, String)
