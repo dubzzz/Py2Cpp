@@ -415,6 +415,62 @@ TEST(CppBuilder_wstring, UnicodeExotic)
   EXPECT_FALSE(uncaught_exception());
 }
 
+/** tuple **/
+
+TEST(CppBuilder_tuple, FromTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 'toto')", Py_eval_input, py_dict, NULL) };
+  std::tuple<int, std::string> expected { 1, "toto" };
+  ASSERT_NE(nullptr, pyo.get());
+
+  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
+  EXPECT_EQ(expected, Functor(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** vector **/
+
+TEST(CppBuilder_vector, FromList)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[1,8,3]", Py_eval_input, py_dict, NULL) };
+  std::vector<int> expected { 1, 8, 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(expected, CppBuilder<std::vector<int>>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_vector, FromInvalidList)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[1,'string',3]", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(CppBuilder<std::vector<int>>()(pyo.get()), std::invalid_argument);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** set **/
+
+TEST(CppBuilder_set, FromSet)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("set([1,8,3])", Py_eval_input, py_dict, NULL) };
+  std::set<int> expected { 1, 8, 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** map **/
+
+TEST(CppBuilder_map, FromDict)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'x': 1, 'y': 3}", Py_eval_input, py_dict, NULL) };
+  std::map<std::string, int> expected { {"x", 1}, {"y", 3} };
+  ASSERT_NE(nullptr, pyo.get());
+
+  auto Functor =  CppBuilder<std::map<std::string, int>>();
+  EXPECT_EQ(expected, Functor(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
 /** MISC **/
 
 TEST(CppBuilder_mix, AnyValue)
