@@ -67,7 +67,7 @@ TEST(CppBuilder_int, Any)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_int, MinPositive)
+TEST(CppBuilder_int, MinValue)
 {
   std::ostringstream out; out << INT_MIN;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -76,7 +76,7 @@ TEST(CppBuilder_int, MinPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_int, MaxPositive)
+TEST(CppBuilder_int, MaxValue)
 {
   std::ostringstream out; out << INT_MAX;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -85,7 +85,7 @@ TEST(CppBuilder_int, MaxPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_int, LessThanMinPositive)
+TEST(CppBuilder_int, LessThanMinValue)
 {
   std::ostringstream out; out << INT_MIN << "-1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -94,7 +94,7 @@ TEST(CppBuilder_int, LessThanMinPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_int, MoreThanMaxPositive)
+TEST(CppBuilder_int, MoreThanMaxValue)
 {
   std::ostringstream out; out << INT_MAX << "+1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -121,7 +121,7 @@ TEST(CppBuilder_uint, Any)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_uint, MaxPositive)
+TEST(CppBuilder_uint, MaxValue)
 {
   std::ostringstream out; out << UINT_MAX;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -138,7 +138,7 @@ TEST(CppBuilder_uint, LessThanZero)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_uint, MoreThanMaxPositive)
+TEST(CppBuilder_uint, MoreThanMaxValue)
 {
   std::ostringstream out; out << UINT_MAX << "+1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -165,7 +165,7 @@ TEST(CppBuilder_long, Any)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_long, MinPositive)
+TEST(CppBuilder_long, MinValue)
 {
   std::ostringstream out; out << LONG_MIN;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -174,7 +174,7 @@ TEST(CppBuilder_long, MinPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_long, MaxPositive)
+TEST(CppBuilder_long, MaxValue)
 {
   std::ostringstream out; out << LONG_MAX;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -183,7 +183,7 @@ TEST(CppBuilder_long, MaxPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_long, LessThanMinPositive)
+TEST(CppBuilder_long, LessThanMinValue)
 {
   std::ostringstream out; out << LONG_MIN << "-1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -192,7 +192,7 @@ TEST(CppBuilder_long, LessThanMinPositive)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_long, MoreThanMaxPositive)
+TEST(CppBuilder_long, MoreThanMaxValue)
 {
   std::ostringstream out; out << LONG_MAX << "+1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -219,7 +219,7 @@ TEST(CppBuilder_ulong, Any)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_ulong, MaxPositive)
+TEST(CppBuilder_ulong, MaxValue)
 {
   std::ostringstream out; out << ULONG_MAX;
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
@@ -245,7 +245,7 @@ TEST(CppBuilder_ulong, FarLessThanZero)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_ulong, MoreThanMaxPositive)
+TEST(CppBuilder_ulong, MoreThanMaxValue)
 {
   std::ostringstream out; out << ULONG_MAX << "+1";
   std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, py_dict, NULL) };
