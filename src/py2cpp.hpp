@@ -80,7 +80,12 @@ struct CppBuilder<unsigned int>
     assert(pyo);
     if (PyLong_Check(pyo))
     {
-      unsigned long v { PyLong_AsUnsignedLongMask(pyo) };
+      unsigned long v { PyLong_AsUnsignedLong(pyo) };
+      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+      {
+        PyErr_Clear();
+        throw std::overflow_error("Out of <unsigned int> boundaries");
+      }
       if (v > UINT_MAX)
       {
         throw std::overflow_error("Out of <unsigned int> boundaries");
@@ -89,12 +94,12 @@ struct CppBuilder<unsigned int>
     }
     else if (PyInt_Check(pyo))
     {
-      unsigned long v { PyInt_AsUnsignedLongMask(pyo) };
-      if (v > UINT_MAX)
+      long v { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULONG_MAX
+      if (v < 0 || v > UINT_MAX)
       {
         throw std::overflow_error("Out of <unsigned int> boundaries");
       }
-      return static_cast<int>(v);
+      return static_cast<unsigned int>(v);
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
