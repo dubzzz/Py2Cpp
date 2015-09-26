@@ -6,7 +6,9 @@ This library makes it easy to convert Python objects (Python C API) to standard 
 
 ## How to use it?
 
-### Basic usages: std datatypes
+### Python objects towards C++ instances
+
+#### Basic usages: std datatypes
 
 The file ```src/py2cpp.hpp``` defines the functor ```CppBuilder<T>```, which is responsible to build the corresponding C++ element of a given PyObject instance automatically. A same functor can be use for several PyObject.
 
@@ -31,6 +33,6 @@ For instance, if a PyObject* contains a ```dict(tuple(int,int,double),list(int))
 std::map<std::tuple<int,int,double>,std::vector<int>> out { CppBuilder<std::map<std::tuple<int,int,double>,std::vector<int>>>()(py_object) };
 ```
 
-### More advance usages: fill your own struct/class
+#### More advance usages: fill your own struct/class
 
 To describe...
