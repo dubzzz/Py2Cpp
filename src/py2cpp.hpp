@@ -399,10 +399,10 @@ template<class T>          struct CppBuilder<std::vector<std::vector<T>>>      :
 template<class T>          struct CppBuilder<std::vector<std::set<T>>>         : CppBuilder<std::vector<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::vector<std::map<K,T>>>       : CppBuilder<std::vector<CppBuilder<std::map<K,T>>>> {};
 
-template <class T>
-struct CppBuilder<std::set<T>>
+template <class FUNCTOR>
+struct CppBuilder<std::set<FUNCTOR>>
 {
-  typedef std::set<T> value_type;
+  typedef std::set<typename FUNCTOR::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -410,12 +410,12 @@ struct CppBuilder<std::set<T>>
     {
       long size { PySet_Size(pyo) };
       std::vector<PyObject*> backup(size);
-      std::set<T> s;
+      value_type s;
       for (long i { 0 } ; i != size ; ++i)
       {
         PyObject* popped { PySet_Pop(pyo) };
         backup[i] = popped;
-        s.insert(CppBuilder<T>()(popped));
+        s.insert(FUNCTOR()(popped));
       }
       for (PyObject* popped : backup)
       {
@@ -427,6 +427,22 @@ struct CppBuilder<std::set<T>>
     throw std::invalid_argument("Not a PySet instance");
   }
 };
+
+template<>                 struct CppBuilder<std::set<PyObject*>>           : CppBuilder<std::set<CppBuilder<PyObject*>>> {};
+template<>                 struct CppBuilder<std::set<bool>>                : CppBuilder<std::set<CppBuilder<bool>>> {};
+template<>                 struct CppBuilder<std::set<int>>                 : CppBuilder<std::set<CppBuilder<int>>> {};
+template<>                 struct CppBuilder<std::set<unsigned int>>        : CppBuilder<std::set<CppBuilder<unsigned int>>> {};
+template<>                 struct CppBuilder<std::set<long>>                : CppBuilder<std::set<CppBuilder<long>>> {};
+template<>                 struct CppBuilder<std::set<unsigned long>>       : CppBuilder<std::set<CppBuilder<unsigned long>>> {};
+template<>                 struct CppBuilder<std::set<long long>>           : CppBuilder<std::set<CppBuilder<long long>>> {};
+template<>                 struct CppBuilder<std::set<unsigned long long>>  : CppBuilder<std::set<CppBuilder<unsigned long long>>> {};
+template<>                 struct CppBuilder<std::set<double>>              : CppBuilder<std::set<CppBuilder<double>>> {};
+template<>                 struct CppBuilder<std::set<std::string>>         : CppBuilder<std::set<CppBuilder<std::string>>> {};
+template<>                 struct CppBuilder<std::set<std::wstring>>        : CppBuilder<std::set<CppBuilder<std::wstring>>> {};
+template<class... Args>    struct CppBuilder<std::set<std::tuple<Args...>>> : CppBuilder<std::set<CppBuilder<std::tuple<Args...>>>> {};
+template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : CppBuilder<std::set<CppBuilder<std::vector<T>>>> {};
+template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
+template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
 
 template <class K, class T>
 struct CppBuilder<std::map<K,T>>

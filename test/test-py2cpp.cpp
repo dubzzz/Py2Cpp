@@ -543,6 +543,7 @@ namespace
     Point(int x, int y, int z) : x(x), y(y), z(z) {}
     Point(const Point&) = default;
     bool operator==(const Point& p) const {return x == p.x && y == p.y && z == p.z;}
+    bool operator<(const Point& p) const {return x < p.x || (x == p.x && (y < p.y || (y == p.y && z < p.z)));}
     
     struct FromPy : CppBuilder<FromTuple<Point, int, int, int>>
     {
@@ -571,6 +572,20 @@ TEST(CppBuilder_struct, VectorOf)
   EXPECT_EQ(pts[0], ret[0]);
   EXPECT_EQ(pts[1], ret[1]);
   EXPECT_EQ(pts[2], ret[2]);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, SetOf)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("set([(1, 3, 4), (1, 5, 5), (0, -1, 0)])", Py_eval_input, py_dict, NULL) };
+  Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
+  
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::set<Point::FromPy>>()(pyo.get());
+  EXPECT_EQ(3, ret.size());
+  EXPECT_NE(ret.end(), ret.find(pts[0]));
+  EXPECT_NE(ret.end(), ret.find(pts[1]));
+  EXPECT_NE(ret.end(), ret.find(pts[2]));
   EXPECT_FALSE(uncaught_exception());
 }
 
