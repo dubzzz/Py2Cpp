@@ -25,7 +25,8 @@ struct CppBuilder;
 template <>
 struct CppBuilder<PyObject*>
 {
-  PyObject* operator() (PyObject* pyo)
+  typedef PyObject* value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     return pyo;
@@ -35,7 +36,8 @@ struct CppBuilder<PyObject*>
 template <>
 struct CppBuilder<bool>
 {
-  bool operator() (PyObject* pyo)
+  typedef bool value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyBool_Check(pyo))
@@ -49,7 +51,8 @@ struct CppBuilder<bool>
 template <>
 struct CppBuilder<int>
 {
-  int operator() (PyObject* pyo)
+  typedef int value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -77,7 +80,8 @@ struct CppBuilder<int>
 template <>
 struct CppBuilder<unsigned int>
 {
-  unsigned int operator() (PyObject* pyo)
+  typedef unsigned int value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -110,7 +114,8 @@ struct CppBuilder<unsigned int>
 template <>
 struct CppBuilder<long>
 {
-  long operator() (PyObject* pyo)
+  typedef long value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -134,7 +139,8 @@ struct CppBuilder<long>
 template <>
 struct CppBuilder<unsigned long>
 {
-  unsigned long operator() (PyObject* pyo)
+  typedef unsigned long value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -163,7 +169,8 @@ struct CppBuilder<unsigned long>
 template <>
 struct CppBuilder<long long>
 {
-  long long operator() (PyObject* pyo)
+  typedef long long value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -187,7 +194,8 @@ struct CppBuilder<long long>
 template <>
 struct CppBuilder<unsigned long long>
 {
-  unsigned long long operator() (PyObject* pyo)
+  typedef unsigned long long value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -217,7 +225,8 @@ struct CppBuilder<unsigned long long>
 template <>
 struct CppBuilder<double>
 {
-  double operator() (PyObject* pyo)
+  typedef double value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyFloat_Check(pyo))
@@ -251,7 +260,8 @@ struct CppBuilder<double>
 template <>
 struct CppBuilder<std::string>
 {
-  std::string operator() (PyObject* pyo)
+  typedef std::string value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyString_Check(pyo))
@@ -282,7 +292,8 @@ struct CppBuilder<std::string>
 template <>
 struct CppBuilder<std::wstring>
 {
-  std::wstring operator() (PyObject* pyo)
+  typedef std::wstring value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyString_Check(pyo))
@@ -319,7 +330,6 @@ void _feedCppTuple(TUPLE& tuple, PyObject* root)
 template <class TUPLE, std::size_t pos, class T, class... Args>
 void _feedCppTuple(TUPLE& tuple, PyObject* root)
 {
-
   std::get<pos>(tuple) = CppBuilder<T>()(PyTuple_GetItem(root, pos));
   _feedCppTuple<TUPLE, pos +1, Args...>(tuple, root);
 }
@@ -327,7 +337,8 @@ void _feedCppTuple(TUPLE& tuple, PyObject* root)
 template <class... Args>
 struct CppBuilder<std::tuple<Args...>>
 {
-  std::tuple<Args...> operator() (PyObject* pyo)
+  typedef std::tuple<Args...> value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyTuple_Check(pyo))
@@ -365,7 +376,8 @@ struct CppBuilder<std::tuple<Args...>>
 template <class VECTOR>
 struct CppBuilder
 {
-  VECTOR operator() (PyObject* pyo)
+  typedef VECTOR value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyList_Check(pyo))
@@ -385,7 +397,8 @@ struct CppBuilder
 template <class T>
 struct CppBuilder<std::set<T>>
 {
-  std::set<T> operator() (PyObject* pyo)
+  typedef std::set<T> value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PySet_Check(pyo))
@@ -413,7 +426,8 @@ struct CppBuilder<std::set<T>>
 template <class K, class T>
 struct CppBuilder<std::map<K,T>>
 {
-  std::map<K,T> operator() (PyObject* pyo)
+  typedef std::map<K,T> value_type;
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyDict_Check(pyo))
@@ -450,13 +464,14 @@ void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
 template <class OBJ, class... Args>
 struct CppBuilder<FromTuple<OBJ, Args...>>
 {
+  typedef OBJ value_type;
   std::tuple<std::function<void(OBJ&, Args)>...> callbacks;
   
   CppBuilder(std::function<void(OBJ&, Args)>... args)
     : callbacks(std::make_tuple(args...))
   {}
 
-  OBJ operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyTuple_Check(pyo))
