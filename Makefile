@@ -6,20 +6,25 @@ LDGTEST=-L/usr/local/lib -lgtest
 
 all: build
 
-src/main.o: src/main.cpp src/py2cpp.hpp
-	g++ -o src/main.o -c src/main.cpp $(CFLAGS)
+# *.o files compilation
 
-a.out: src/main.o
-	g++ -o a.out src/main.o $(LDFLAGS)
+build/test/test-py2cpp.o: test/test-py2cpp.cpp src/py2cpp.hpp
+	mkdir -p build/test
+	g++ -o build/test/test-py2cpp.o -c test/test-py2cpp.cpp $(CFLAGS) $(CGTEST)
 
-test/test-py2cpp.o: test/test-py2cpp.cpp src/py2cpp.hpp
-	g++ -o test/test-py2cpp.o -c test/test-py2cpp.cpp $(CFLAGS) $(CGTEST)
+# Binaries
 
-test-py2cpp.out: test/test-py2cpp.o
-	g++ -o test-py2cpp.out test/test-py2cpp.o $(LDFLAGS) $(LDGTEST)
+build/py2cpp.out: build/test/test-py2cpp.o
+	mkdir -p build
+	g++ -o build/py2cpp.out build/test/test-py2cpp.o $(LDFLAGS) $(LDGTEST)
 
-build: a.out test-py2cpp.out
+# Allowed commands
+
+build: build/py2cpp.out
+
+test: build/py2cpp.out
+	./build/py2cpp.out
 
 clean:
-	rm -rf src/*.o
+	rm -rf build-dir
 
