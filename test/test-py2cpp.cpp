@@ -589,6 +589,21 @@ TEST(CppBuilder_struct, SetOf)
   EXPECT_FALSE(uncaught_exception());
 }
 
+TEST(CppBuilder_struct, MapOf)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'x': (1, 0, 4), 'y': (0, 5, 9)}", Py_eval_input, py_dict, NULL) };
+  Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
+  
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::map<std::string, Point::FromPy>>()(pyo.get());
+  EXPECT_EQ(2, ret.size());
+  EXPECT_NE(ret.end(), ret.find("x"));
+  EXPECT_NE(ret.end(), ret.find("y"));
+  EXPECT_EQ(pts[0], ret.find("x")->second);
+  EXPECT_EQ(pts[1], ret.find("y")->second);
+  EXPECT_FALSE(uncaught_exception());
+}
+
 /** MISC **/
 
 TEST(CppBuilder_mix, AnyValue)

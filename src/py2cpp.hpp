@@ -444,27 +444,43 @@ template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : Cp
 template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
 
-template <class K, class T>
-struct CppBuilder<std::map<K,T>>
+template <class K, class F_VALUE>
+struct CppBuilder<std::map<K,F_VALUE>>
 {
-  typedef std::map<K,T> value_type;
+  typedef std::map<K, typename F_VALUE::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyDict_Check(pyo))
     {
-      std::map<K,T> dict;
+      value_type dict;
       PyObject *key, *value;
       Py_ssize_t pos = 0;
       while (PyDict_Next(pyo, &pos, &key, &value))
       {
-        dict[CppBuilder<K>()(key)] = CppBuilder<T>()(value);
+        dict[CppBuilder<K>()(key)] = F_VALUE()(value);
       }
       return dict;
     }
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
+
+template<class U>                   struct CppBuilder<std::map<U,PyObject*>>           : CppBuilder<std::map<U,CppBuilder<PyObject*>>> {};
+template<class U>                   struct CppBuilder<std::map<U,bool>>                : CppBuilder<std::map<U,CppBuilder<bool>>> {};
+template<class U>                   struct CppBuilder<std::map<U,int>>                 : CppBuilder<std::map<U,CppBuilder<int>>> {};
+template<class U>                   struct CppBuilder<std::map<U,unsigned int>>        : CppBuilder<std::map<U,CppBuilder<unsigned int>>> {};
+template<class U>                   struct CppBuilder<std::map<U,long>>                : CppBuilder<std::map<U,CppBuilder<long>>> {};
+template<class U>                   struct CppBuilder<std::map<U,unsigned long>>       : CppBuilder<std::map<U,CppBuilder<unsigned long>>> {};
+template<class U>                   struct CppBuilder<std::map<U,long long>>           : CppBuilder<std::map<U,CppBuilder<long long>>> {};
+template<class U>                   struct CppBuilder<std::map<U,unsigned long long>>  : CppBuilder<std::map<U,CppBuilder<unsigned long long>>> {};
+template<class U>                   struct CppBuilder<std::map<U,double>>              : CppBuilder<std::map<U,CppBuilder<double>>> {};
+template<class U>                   struct CppBuilder<std::map<U,std::string>>         : CppBuilder<std::map<U,CppBuilder<std::string>>> {};
+template<class U>                   struct CppBuilder<std::map<U,std::wstring>>        : CppBuilder<std::map<U,CppBuilder<std::wstring>>> {};
+template<class U, class... Args>    struct CppBuilder<std::map<U,std::tuple<Args...>>> : CppBuilder<std::map<U,CppBuilder<std::tuple<Args...>>>> {};
+template<class U, class T>          struct CppBuilder<std::map<U,std::vector<T>>>      : CppBuilder<std::map<U,CppBuilder<std::vector<T>>>> {};
+template<class U, class T>          struct CppBuilder<std::map<U,std::set<T>>>         : CppBuilder<std::map<U,CppBuilder<std::set<T>>>> {};
+template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>       : CppBuilder<std::map<U,CppBuilder<std::map<K,T>>>> {};
 
 template <class OBJ, class... Args>
 struct FromTuple
