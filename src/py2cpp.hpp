@@ -444,10 +444,11 @@ template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : Cp
 template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
 
-template <class K, class F_VALUE>
-struct CppBuilder<std::map<K,F_VALUE>>
+template <class FUNCTOR> struct Using : FUNCTOR {};
+template <class F_KEY, class F_VALUE>
+struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
 {
-  typedef std::map<K, typename F_VALUE::value_type> value_type;
+  typedef std::map<typename F_KEY::value_type, typename F_VALUE::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -458,13 +459,16 @@ struct CppBuilder<std::map<K,F_VALUE>>
       Py_ssize_t pos = 0;
       while (PyDict_Next(pyo, &pos, &key, &value))
       {
-        dict[CppBuilder<K>()(key)] = F_VALUE()(value);
+        dict[F_KEY()(key)] = F_VALUE()(value);
       }
       return dict;
     }
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
+
+template <class K, class F_VALUE>
+struct CppBuilder<std::map<K,F_VALUE>> : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
 
 template<class U>                   struct CppBuilder<std::map<U,PyObject*>>           : CppBuilder<std::map<U,CppBuilder<PyObject*>>> {};
 template<class U>                   struct CppBuilder<std::map<U,bool>>                : CppBuilder<std::map<U,CppBuilder<bool>>> {};
@@ -481,6 +485,9 @@ template<class U, class... Args>    struct CppBuilder<std::map<U,std::tuple<Args
 template<class U, class T>          struct CppBuilder<std::map<U,std::vector<T>>>      : CppBuilder<std::map<U,CppBuilder<std::vector<T>>>> {};
 template<class U, class T>          struct CppBuilder<std::map<U,std::set<T>>>         : CppBuilder<std::map<U,CppBuilder<std::set<T>>>> {};
 template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>       : CppBuilder<std::map<U,CppBuilder<std::map<K,T>>>> {};
+
+template <class FUNCTOR>
+struct CppBuilder : FUNCTOR {};
 
 template <class OBJ, class... Args>
 struct FromTuple
