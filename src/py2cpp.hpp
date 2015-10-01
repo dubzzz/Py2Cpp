@@ -323,6 +323,8 @@ struct CppBuilder<std::wstring>
   }
 };
 
+template <class FUNCTOR> struct Using : FUNCTOR {};
+
 template <class TUPLE, std::size_t pos>
 void _feedCppTuple(TUPLE& tuple, PyObject* root)
 {}
@@ -382,6 +384,8 @@ struct CppBuilder<std::vector<FUNCTOR>>
     throw std::invalid_argument("Not a PyList instance");
   }
 };
+template <class FUNCTOR>
+struct CppBuilder<std::vector<Using<FUNCTOR>>> : CppBuilder<std::vector<FUNCTOR>> {};
 
 template<>                 struct CppBuilder<std::vector<PyObject*>>           : CppBuilder<std::vector<CppBuilder<PyObject*>>> {};
 template<>                 struct CppBuilder<std::vector<bool>>                : CppBuilder<std::vector<CppBuilder<bool>>> {};
@@ -427,6 +431,8 @@ struct CppBuilder<std::set<FUNCTOR>>
     throw std::invalid_argument("Not a PySet instance");
   }
 };
+template <class FUNCTOR>
+struct CppBuilder<std::set<Using<FUNCTOR>>> : CppBuilder<std::set<FUNCTOR>> {};
 
 template<>                 struct CppBuilder<std::set<PyObject*>>           : CppBuilder<std::set<CppBuilder<PyObject*>>> {};
 template<>                 struct CppBuilder<std::set<bool>>                : CppBuilder<std::set<CppBuilder<bool>>> {};
@@ -444,7 +450,6 @@ template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : Cp
 template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
 
-template <class FUNCTOR> struct Using : FUNCTOR {};
 template <class F_KEY, class F_VALUE>
 struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
 {
@@ -466,6 +471,8 @@ struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
+template <class F_KEY, class F_VALUE>
+struct CppBuilder<std::map<Using<F_KEY>, Using<F_VALUE>>> : CppBuilder<std::map<Using<F_KEY>,F_VALUE>> {};
 
 template <class K, class F_VALUE>
 struct CppBuilder<std::map<K,F_VALUE>> : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
