@@ -362,31 +362,20 @@ struct CppBuilder<std::tuple<Args...>>
   }
 };
 
-/**
- * VECTOR has to have the following characteristics:
- * 
- * (constructor):
- *    VECTOR(size_type count)
- *    build a VECTOR of size count
- *
- * ::begin()
- * ::end()
- * ::iterator compatible with ++it
- */
-template <class VECTOR>
-struct CppBuilder
+template <class T>
+struct CppBuilder<std::vector<T>>
 {
-  typedef VECTOR value_type;
+  typedef std::vector<T> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyList_Check(pyo))
     {
       unsigned int i { 0 };
-      VECTOR v(PyList_Size(pyo));
-      for (typename VECTOR::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
+      std::vector<T> v(PyList_Size(pyo));
+      for (typename std::vector<T>::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
       {
-        *it = CppBuilder<typename VECTOR::value_type>()(PyList_GetItem(pyo, i));
+        *it = CppBuilder<T>()(PyList_GetItem(pyo, i));
       }
       return v;
     }
