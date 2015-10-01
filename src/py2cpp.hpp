@@ -362,26 +362,42 @@ struct CppBuilder<std::tuple<Args...>>
   }
 };
 
-template <class T>
-struct CppBuilder<std::vector<T>>
+template <class FUNCTOR>
+struct CppBuilder<std::vector<FUNCTOR>>
 {
-  typedef std::vector<T> value_type;
+  typedef std::vector<typename FUNCTOR::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
     if (PyList_Check(pyo))
     {
       unsigned int i { 0 };
-      std::vector<T> v(PyList_Size(pyo));
-      for (typename std::vector<T>::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
+      value_type v(PyList_Size(pyo));
+      for (typename value_type::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
       {
-        *it = CppBuilder<T>()(PyList_GetItem(pyo, i));
+        *it = FUNCTOR()(PyList_GetItem(pyo, i));
       }
       return v;
     }
     throw std::invalid_argument("Not a PyList instance");
   }
 };
+
+template<>                 struct CppBuilder<std::vector<PyObject*>>           : CppBuilder<std::vector<CppBuilder<PyObject*>>> {};
+template<>                 struct CppBuilder<std::vector<bool>>                : CppBuilder<std::vector<CppBuilder<bool>>> {};
+template<>                 struct CppBuilder<std::vector<int>>                 : CppBuilder<std::vector<CppBuilder<int>>> {};
+template<>                 struct CppBuilder<std::vector<unsigned int>>        : CppBuilder<std::vector<CppBuilder<unsigned int>>> {};
+template<>                 struct CppBuilder<std::vector<long>>                : CppBuilder<std::vector<CppBuilder<long>>> {};
+template<>                 struct CppBuilder<std::vector<unsigned long>>       : CppBuilder<std::vector<CppBuilder<unsigned long>>> {};
+template<>                 struct CppBuilder<std::vector<long long>>           : CppBuilder<std::vector<CppBuilder<long long>>> {};
+template<>                 struct CppBuilder<std::vector<unsigned long long>>  : CppBuilder<std::vector<CppBuilder<unsigned long long>>> {};
+template<>                 struct CppBuilder<std::vector<double>>              : CppBuilder<std::vector<CppBuilder<double>>> {};
+template<>                 struct CppBuilder<std::vector<std::string>>         : CppBuilder<std::vector<CppBuilder<std::string>>> {};
+template<>                 struct CppBuilder<std::vector<std::wstring>>        : CppBuilder<std::vector<CppBuilder<std::wstring>>> {};
+template<class... Args>    struct CppBuilder<std::vector<std::tuple<Args...>>> : CppBuilder<std::vector<CppBuilder<std::tuple<Args...>>>> {};
+template<class T>          struct CppBuilder<std::vector<std::vector<T>>>      : CppBuilder<std::vector<CppBuilder<std::vector<T>>>> {};
+template<class T>          struct CppBuilder<std::vector<std::set<T>>>         : CppBuilder<std::vector<CppBuilder<std::set<T>>>> {};
+template<class K, class T> struct CppBuilder<std::vector<std::map<K,T>>>       : CppBuilder<std::vector<CppBuilder<std::map<K,T>>>> {};
 
 template <class T>
 struct CppBuilder<std::set<T>>
