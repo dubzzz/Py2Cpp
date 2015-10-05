@@ -582,6 +582,19 @@ void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
   _feedFromDict<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
 }
 
+template <class OBJ, class TUPLE, std::size_t pos>
+void _buildDictCallbackFromAttribute(TUPLE& callbacks)
+{}
+
+template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
+void _buildDictCallbackFromAttribute(TUPLE& callbacks, std::pair<std::string, T OBJ::*> p, std::pair<std::string, Args OBJ::*>... args)
+{
+  T OBJ::*parameter = p.second;
+  std::get<pos>(callbacks).first = p.first;
+  std::get<pos>(callbacks).second = [parameter](OBJ& obj, const T& value){ obj.*parameter = value; };
+  _buildDictCallbackFromAttribute<OBJ, TUPLE, pos +1, Args...>(callbacks, args...);
+}
+
 template <class OBJ, class... Args>
 struct CppBuilder<FromDict<OBJ, Args...>>
 {
@@ -591,6 +604,11 @@ struct CppBuilder<FromDict<OBJ, Args...>>
   CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
     : callbacks(std::make_tuple(args...))
   {}
+  
+  CppBuilder(void *useless, std::pair<std::string, Args OBJ::*>... args)
+  {
+    _buildDictCallbackFromAttribute<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(callbacks, args...);
+  }
   
   value_type operator() (PyObject* pyo)
   {
