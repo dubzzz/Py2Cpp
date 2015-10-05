@@ -11,18 +11,6 @@ using namespace dubzzz::Py2Cpp;
 PyObject *py_main;
 PyObject *py_dict;
 
-namespace
-{
-  struct decref
-  {
-    void operator() (PyObject* pyo)
-    {
-      Py_DECREF(pyo);
-    }
-  };
-}
-
-
 static bool uncaught_exception()
 {
   if (!! PyErr_Occurred())
@@ -602,6 +590,16 @@ TEST(CppBuilder_struct, FromDictArgs)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, py_dict, NULL) };
   Point expected { 1, 3, 4 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, FromObject)
+{
+  PyRun_SimpleString("class Point:\n   x = 5\n   z = 14");
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("Point", Py_eval_input, py_dict, NULL) };
+  Point expected { 5, 0, 14 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());

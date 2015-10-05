@@ -19,6 +19,14 @@
 namespace dubzzz {
 namespace Py2Cpp {
 
+struct decref
+{
+  void operator() (PyObject* pyo)
+  {
+    Py_DECREF(pyo);
+  }
+};
+
 template <class T>
 struct CppBuilder;
 
@@ -583,6 +591,24 @@ void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
 }
 
 template <class OBJ, class TUPLE, std::size_t pos>
+void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{}
+
+template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
+void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{
+  {
+    std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
+    if (pyo.get())
+    {
+      T value { CppBuilder<T>()(pyo.get()) };
+      std::get<pos>(callbacks).second(obj, value);
+    }
+  }
+  _feedFromObject<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
+}
+
+template <class OBJ, class TUPLE, std::size_t pos>
 void _buildDictCallbackFromAttribute(TUPLE& callbacks)
 {}
 
@@ -619,7 +645,12 @@ struct CppBuilder<FromDict<OBJ, Args...>>
       _feedFromDict<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(obj, callbacks, pyo);
       return obj;
     }
-    throw std::invalid_argument("Not a PyDict instance");
+    else
+    {
+      OBJ obj;
+      _feedFromObject<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(obj, callbacks, pyo);
+      return obj;
+    }
   }
 };
 
