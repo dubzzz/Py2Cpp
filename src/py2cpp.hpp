@@ -562,6 +562,50 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
   }
 };
 
+template <class OBJ, class... Args>
+struct FromDict
+{};
+
+template <class OBJ, class TUPLE, std::size_t pos>
+void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{}
+
+template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
+void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
+{
+  PyObject *pyo { PyDict_GetItemString(root, std::get<pos>(callbacks).first.c_str()) };
+  if (pyo)
+  {
+    T value { CppBuilder<T>()(pyo) };
+    std::get<pos>(callbacks).second(obj, value);
+  }
+  _feedFromDict<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
+}
+
+template <class OBJ, class... Args>
+struct CppBuilder<FromDict<OBJ, Args...>>
+{
+  typedef OBJ value_type;
+  std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...> callbacks;
+  
+  CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
+    : callbacks(std::make_tuple(args...))
+  {}
+  
+  value_type operator() (PyObject* pyo)
+  {
+    assert(pyo);
+    if (PyDict_Check(pyo))
+    {
+      OBJ obj;
+      _feedFromDict<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(obj, callbacks, pyo);
+      return obj;
+    }
+    throw std::invalid_argument("Not a PyDict instance");
+  }
+};
+
+
 }
 }
 
