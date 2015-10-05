@@ -512,6 +512,17 @@ void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
   _feedFromTuple<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
 }
 
+template <class OBJ, class TUPLE, std::size_t pos>
+void _buildCallbackFromAttribute(TUPLE& callbacks)
+{}
+
+template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
+void _buildCallbackFromAttribute(TUPLE& callbacks, T OBJ::*t, Args OBJ::*... args)
+{
+  std::get<pos>(callbacks) = [t](OBJ& obj, const T& value){ obj.*t = value; };
+  _buildCallbackFromAttribute<OBJ, TUPLE, pos +1, Args...>(callbacks, args...);
+}
+
 template <class OBJ, class... Args>
 struct CppBuilder<FromTuple<OBJ, Args...>>
 {
@@ -521,6 +532,11 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
   CppBuilder(std::function<void(OBJ&, Args)>... args)
     : callbacks(std::make_tuple(args...))
   {}
+  
+  CppBuilder(Args OBJ::*... args)
+  {
+    _buildCallbackFromAttribute<OBJ, std::tuple<std::function<void(OBJ&, Args)>...>, 0, Args...>(callbacks, args...);
+  }
 
   value_type operator() (PyObject* pyo)
   {
@@ -545,7 +561,6 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
     throw std::invalid_argument("Not a PyTuple instance");
   }
 };
-
 
 }
 }

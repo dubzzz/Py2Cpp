@@ -549,6 +549,10 @@ namespace
     {
       FromPy() : CppBuilder<FromTuple<Point, int, int, int>>(&Point::setX, &Point::setY, &Point::setZ) {}
     };
+    struct FromPyArgs : CppBuilder<FromTuple<Point, int, int, int>>
+    {
+      FromPyArgs() : CppBuilder<FromTuple<Point, int, int, int>>(&Point::x, &Point::y, &Point::z) {}
+    };
   };
 }
 
@@ -558,6 +562,15 @@ TEST(CppBuilder_struct, FromTuple)
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, FromTupleArgs)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 3, 4)", Py_eval_input, py_dict, NULL) };
+  Point expected { 1, 3, 4 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(expected, Point::FromPyArgs()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
