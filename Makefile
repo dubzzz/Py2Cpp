@@ -1,4 +1,8 @@
-CC=g++
+ifeq ($(origin GXX), undefined)
+	CC=g++
+else
+	CC=$(GXX)
+endif
 CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g")
 LDFLAGS=$(shell python-config --ldflags)
 CGTEST=-I/usr/local/include
