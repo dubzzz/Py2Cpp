@@ -598,9 +598,9 @@ template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
 void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
 {
   {
-    std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
-    if (pyo.get())
+    if (PyObject_HasAttrString(root, std::get<pos>(callbacks).first.c_str()))
     {
+      std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
       T value { CppBuilder<T>()(pyo.get()) };
       std::get<pos>(callbacks).second(obj, value);
     }
