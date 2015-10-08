@@ -7,12 +7,16 @@ before_install:
   - sudo apt-get update
 
 install:
-  - sudo apt-get install libgtest-dev python-dev g++
+  - sudo apt-get install libgtest-dev python-dev g++-4.8
+  - export GXX=g++-4.8
   - cd /usr/src/gtest
   - sudo cmake .
   - sudo make
   - sudo mv libgtest* /usr/lib/
   - cd "${TRAVIS_BUILD_DIR}"
+
+compiler:
+  - g++
 
 script:
   - make test
