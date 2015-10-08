@@ -13,7 +13,7 @@ install:
   - sudo cmake .
   - sudo make
   - sudo mv libgtest* /usr/lib/
-  - sudo pip install cpp-coveralls
+  - sudo pip install cpp-coveralls pyopenssl ndg-httpsclient pyasn1
   - cd "${TRAVIS_BUILD_DIR}"
 
 compiler:
