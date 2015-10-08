@@ -15,6 +15,7 @@ static bool uncaught_exception()
 {
   if (!! PyErr_Occurred())
   {
+    PyErr_Print();
     PyErr_Clear();
     return true;
   }
