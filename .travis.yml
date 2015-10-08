@@ -2,8 +2,12 @@ language: cpp
 
 sudo: required
 
+before_install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update
+
 install:
-  - sudo apt-get install libgtest-dev python-dev
+  - sudo apt-get install libgtest-dev python-dev g++
   - cd /usr/src/gtest
   - sudo cmake .
   - sudo make
