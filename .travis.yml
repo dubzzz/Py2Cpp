@@ -9,6 +9,8 @@ before_install:
 install:
   - sudo apt-get install libgtest-dev python-dev g++-4.8
   - export GXX=g++-4.8
+  - sudo rm /usr/bin/gcov
+  - ln -s /usr/bin/gcov-4.8 /usr/bin/gcov
   - cd /usr/src/gtest
   - sudo cmake .
   - sudo make
