@@ -13,6 +13,7 @@ install:
   - sudo cmake .
   - sudo make
   - sudo mv libgtest* /usr/lib/
+  - sudo pip install cpp-coveralls
   - cd "${TRAVIS_BUILD_DIR}"
 
 compiler:
@@ -20,4 +21,7 @@ compiler:
 
 script:
   - make test
+
+after_success:
+  - coveralls --gcov-options '\-lp'
 
