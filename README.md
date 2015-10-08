@@ -1,4 +1,4 @@
-# Py2Cpp
+# Py2Cpp [![Build Status](https://travis-ci.org/dubzzz/Py2Cpp.svg?branch=master)](https://travis-ci.org/dubzzz/Py2Cpp)
 
 ## Metaprogramming serving Py->C++ and C++->Py
 
