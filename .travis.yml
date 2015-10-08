@@ -1,0 +1,15 @@
+language: cpp
+
+sudo: required
+
+install:
+  - sudo apt-get install libgtest-dev python-dev
+  - cd /usr/src/gtest
+  - sudo cmake .
+  - sudo make
+  - sudo mv libgtest* /usr/lib/
+  - cd "${TRAVIS_BUILD_DIR}"
+
+script:
+  - make test
+
