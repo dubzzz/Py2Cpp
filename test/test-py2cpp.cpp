@@ -545,17 +545,16 @@ namespace
     struct FromPyDict : CppBuilder<FromDict<Point, int, int, int>>
     {
       FromPyDict() : CppBuilder<FromDict<Point, int, int, int>>(
-            std::make_pair("x", &Point::setX)
-            , std::make_pair("y", &Point::setY)
-            , std::make_pair("z", &Point::setZ)) {}
+            make_mapping("x", &Point::setX)
+            , make_mapping("y", &Point::setY)
+            , make_mapping("z", &Point::setZ)) {}
     };
     struct FromPyDictArgs : CppBuilder<FromDict<Point, int, int, int>>
     {
       FromPyDictArgs() : CppBuilder<FromDict<Point, int, int, int>>(
-            nullptr
-            , std::make_pair("x", &Point::x)
-            , std::make_pair("y", &Point::y)
-            , std::make_pair("z", &Point::z)) {}
+            make_mapping("x", &Point::x)
+            , make_mapping("y", &Point::y)
+            , make_mapping("z", &Point::z)) {}
     };
   };
 }

@@ -597,28 +597,31 @@ void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
 template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
 void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
 {
+  if (PyObject_HasAttrString(root, std::get<pos>(callbacks).first.c_str()))
   {
-    if (PyObject_HasAttrString(root, std::get<pos>(callbacks).first.c_str()))
-    {
-      std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
-      T value { CppBuilder<T>()(pyo.get()) };
-      std::get<pos>(callbacks).second(obj, value);
-    }
+    std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
+    T value { CppBuilder<T>()(pyo.get()) };
+    std::get<pos>(callbacks).second(obj, value);
   }
   _feedFromObject<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
 }
 
-template <class OBJ, class TUPLE, std::size_t pos>
-void _buildDictCallbackFromAttribute(TUPLE& callbacks)
-{}
-
-template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
-void _buildDictCallbackFromAttribute(TUPLE& callbacks, std::pair<std::string, T OBJ::*> p, std::pair<std::string, Args OBJ::*>... args)
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
 {
-  T OBJ::*parameter = p.second;
-  std::get<pos>(callbacks).first = p.first;
-  std::get<pos>(callbacks).second = [parameter](OBJ& obj, const T& value){ obj.*parameter = value; };
-  _buildDictCallbackFromAttribute<OBJ, TUPLE, pos +1, Args...>(callbacks, args...);
+  return std::make_pair(key, fun);
+}
+
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, void (OBJ::*fun)(T))
+{
+  return std::make_pair(key, fun);
+}
+
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, T OBJ::*member)
+{
+  return std::make_pair(key, [member](OBJ& obj, const T &value){ obj.*member = value; });
 }
 
 template <class OBJ, class... Args>
@@ -630,11 +633,6 @@ struct CppBuilder<FromDict<OBJ, Args...>>
   CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
     : callbacks(std::make_tuple(args...))
   {}
-  
-  CppBuilder(void *useless, std::pair<std::string, Args OBJ::*>... args)
-  {
-    _buildDictCallbackFromAttribute<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(callbacks, args...);
-  }
   
   value_type operator() (PyObject* pyo)
   {
