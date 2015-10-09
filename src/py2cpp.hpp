@@ -554,69 +554,6 @@ template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>
  * Objects builders
  */
 
-template <class OBJ, class TUPLE, std::size_t pos>
-void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{}
-
-template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
-void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{
-  T value { CppBuilder<T>()(PyTuple_GetItem(root, pos)) };
-  std::get<pos>(callbacks)(obj, value);
-  _feedFromTuple<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
-}
-
-template <class OBJ, class TUPLE, std::size_t pos>
-void _buildCallbackFromAttribute(TUPLE& callbacks)
-{}
-
-template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
-void _buildCallbackFromAttribute(TUPLE& callbacks, T OBJ::*t, Args OBJ::*... args)
-{
-  std::get<pos>(callbacks) = [t](OBJ& obj, const T& value){ obj.*t = value; };
-  _buildCallbackFromAttribute<OBJ, TUPLE, pos +1, Args...>(callbacks, args...);
-}
-
-template <class OBJ, class... Args>
-struct CppBuilder<FromTuple<OBJ, Args...>>
-{
-  typedef OBJ value_type;
-  std::tuple<std::function<void(OBJ&, Args)>...> callbacks;
-  
-  CppBuilder(std::function<void(OBJ&, Args)>... args)
-    : callbacks(std::make_tuple(args...))
-  {}
-  
-  CppBuilder(Args OBJ::*... args)
-  {
-    _buildCallbackFromAttribute<OBJ, std::tuple<std::function<void(OBJ&, Args)>...>, 0, Args...>(callbacks, args...);
-  }
-
-  value_type operator() (PyObject* pyo)
-  {
-    assert(pyo);
-    if (PyTuple_Check(pyo))
-    {
-      if (PyTuple_Size(pyo) == sizeof...(Args))
-      {
-        OBJ obj;
-        _feedFromTuple<OBJ, std::tuple<std::function<void(OBJ&, Args)>...>, 0, Args...>(obj, callbacks, pyo);
-        return obj;
-      }
-      else
-      {
-        std::ostringstream oss;
-        oss << "PyTuple length differs from asked one: "
-            << "PyTuple(" << PyTuple_Size(pyo) << ") "
-            << "and FromTuple<...>(" << sizeof...(Args) << ")";
-        throw std::length_error(oss.str());
-      }
-    }
-    throw std::invalid_argument("Not a PyTuple instance");
-  }
-};
-
-
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
 {
@@ -635,23 +572,33 @@ inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const st
   return std::make_pair(key, [member](OBJ& obj, const T &value){ obj.*member = value; });
 }
 
-template <class OBJ, class... Args>
+template <class OBJ, std::size_t pos, class... Args>
 struct CppBuilderHelper;
 
-template <class OBJ>
-struct CppBuilderHelper<OBJ>
+template <class OBJ, std::size_t pos>
+struct CppBuilderHelper<OBJ, pos>
 {
   CppBuilderHelper() {}
   void fromDict(OBJ& obj, PyObject* pyo) const {}
   void fromObject(OBJ& obj, PyObject* pyo) const {}
+  void fromTuple(OBJ& obj, PyObject* pyo) const {}
 };
 
-template <class OBJ, class T, class... Args>
-struct CppBuilderHelper<OBJ,T,Args...>
+template <class OBJ, std::size_t pos, class T, class... Args>
+struct CppBuilderHelper<OBJ,pos,T,Args...>
 {
   std::pair<std::string, std::function<void(OBJ&, T)>> callback;
-  CppBuilderHelper<OBJ, Args...> subBuilder;
+  CppBuilderHelper<OBJ, pos +1, Args...> subBuilder;
   
+  // tuple's constructors
+  CppBuilderHelper(std::function<void(OBJ&, T)> fun, std::function<void(OBJ&, Args)>... args)
+      : callback(make_mapping("", fun)), subBuilder(args...)
+  {}
+  CppBuilderHelper(T OBJ::*member, Args OBJ::*... args)
+      : callback(make_mapping("", member)), subBuilder(args...)
+  {}
+  
+  // full constructors  
   CppBuilderHelper(
         std::pair<std::string, std::function<void(OBJ&, T)>> callback
         , std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
@@ -679,13 +626,59 @@ struct CppBuilderHelper<OBJ,T,Args...>
     }
     subBuilder.fromObject(obj, pyo);
   }
+  
+  void fromTuple(OBJ& obj, PyObject* pyo) const
+  {
+    T value { CppBuilder<T>()(PyTuple_GetItem(pyo, pos)) };
+    callback.second(obj, value);
+    subBuilder.fromTuple(obj, pyo);
+  }
+};
+
+template <class OBJ, class... Args>
+struct CppBuilder<FromTuple<OBJ, Args...>>
+{
+  typedef OBJ value_type;
+  CppBuilderHelper<OBJ, 0, Args...> subBuilder;
+  
+  CppBuilder(std::function<void(OBJ&, Args)>... args)
+      : subBuilder(args...)
+  {}
+  
+  CppBuilder(Args OBJ::*... args)
+      : subBuilder(args...)
+  {}
+  
+  value_type operator() (PyObject* pyo)
+  {
+    assert(pyo);
+    
+    if (PyTuple_Check(pyo))
+    {
+      if (PyTuple_Size(pyo) == sizeof...(Args))
+      {
+        OBJ obj;
+        subBuilder.fromTuple(obj, pyo);
+        return obj;
+      }
+      else
+      {
+        std::ostringstream oss;
+        oss << "PyTuple length differs from asked one: "
+            << "PyTuple(" << PyTuple_Size(pyo) << ") "
+            << "and FromTuple<...>(" << sizeof...(Args) << ")";
+        throw std::length_error(oss.str());
+      }
+    }
+    throw std::invalid_argument("Not a PyTuple instance");
+  }
 };
 
 template <class OBJ, class... Args>
 struct CppBuilder<FromDict<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  CppBuilderHelper<OBJ, Args...> subBuilder;
+  CppBuilderHelper<OBJ, 0, Args...> subBuilder;
   
   CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
       : subBuilder(args...)
@@ -707,7 +700,6 @@ struct CppBuilder<FromDict<OBJ, Args...>>
     return obj;
   }
 };
-
 
 }
 }
