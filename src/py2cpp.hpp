@@ -579,16 +579,16 @@ template <class OBJ, std::size_t pos>
 struct CppBuilderHelper<OBJ, pos>
 {
   CppBuilderHelper() {}
-  void fromDict(OBJ& obj, PyObject* pyo) const {}
-  void fromObject(OBJ& obj, PyObject* pyo) const {}
-  void fromTuple(OBJ& obj, PyObject* pyo) const {}
+  inline void fromDict(OBJ& obj, PyObject* pyo) const {}
+  inline void fromObject(OBJ& obj, PyObject* pyo) const {}
+  inline void fromTuple(OBJ& obj, PyObject* pyo) const {}
 };
 
 template <class OBJ, std::size_t pos, class T, class... Args>
 struct CppBuilderHelper<OBJ,pos,T,Args...>
 {
-  std::pair<std::string, std::function<void(OBJ&, T)>> callback;
-  CppBuilderHelper<OBJ, pos +1, Args...> subBuilder;
+  const std::pair<std::string, std::function<void(OBJ&, T)>> callback;
+  const CppBuilderHelper<OBJ, pos +1, Args...> subBuilder;
   
   // tuple's constructors
   CppBuilderHelper(std::function<void(OBJ&, T)> fun, std::function<void(OBJ&, Args)>... args)
@@ -605,7 +605,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
       : callback(callback), subBuilder(args...)
   {}
   
-  void fromDict(OBJ& obj, PyObject* pyo) const
+  inline void fromDict(OBJ& obj, PyObject* pyo) const
   {
     PyObject *pyo_item { PyDict_GetItemString(pyo, callback.first.c_str()) };
     if (pyo_item)
@@ -616,7 +616,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
     subBuilder.fromDict(obj, pyo);
   }
   
-  void fromObject(OBJ& obj, PyObject* pyo) const
+  inline void fromObject(OBJ& obj, PyObject* pyo) const
   {
     if (PyObject_HasAttrString(pyo, callback.first.c_str()))
     {
@@ -627,7 +627,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
     subBuilder.fromObject(obj, pyo);
   }
   
-  void fromTuple(OBJ& obj, PyObject* pyo) const
+  inline void fromTuple(OBJ& obj, PyObject* pyo) const
   {
     T value { CppBuilder<T>()(PyTuple_GetItem(pyo, pos)) };
     callback.second(obj, value);
@@ -639,7 +639,7 @@ template <class OBJ, class... Args>
 struct CppBuilder<FromTuple<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  CppBuilderHelper<OBJ, 0, Args...> subBuilder;
+  const CppBuilderHelper<OBJ, 0, Args...> subBuilder;
   
   CppBuilder(std::function<void(OBJ&, Args)>... args)
       : subBuilder(args...)
