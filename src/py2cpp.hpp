@@ -19,6 +19,14 @@
 namespace dubzzz {
 namespace Py2Cpp {
 
+/**
+ * Public structures
+ */
+
+// Struct automatically decreasing PyObject counter when used with unique_ptr
+//
+// Syntax:
+//    std::unique_ptr<PyObject, decref> python_object
 struct decref
 {
   void operator() (PyObject* pyo)
@@ -27,8 +35,29 @@ struct decref
   }
 };
 
-template <class T>
-struct CppBuilder;
+// Templated class used to help the compiler understand
+// the given parameter is a builder and not a simple primative or basic structure
+//
+// Syntax:
+//    Using<CppBuilder<T>> can be used in CppBuilder<std::map<Using<CppBuilder<T>>, int>>>
+//    nb.: Using must be used when dealing with customs objects as keys of std::map
+//         otherwise they are not needed but can be used
+template <class FUNCTOR> struct Using : FUNCTOR {};
+
+
+// FromTuple and FromDict are used to build cutsom and complex objects
+// based on dicts or classes
+// Syntax:
+//    CppBuilder<FromTuple<MyClass, accessors' types...>>
+//    CppBuilder<FromDict<MyClass, accessors' types...>>
+template <class OBJ, class... Args> struct FromTuple {};
+template <class OBJ, class... Args> struct FromDict {};
+
+template <class T> struct CppBuilder;
+
+/**
+ * Identity builder
+ */
 
 template <>
 struct CppBuilder<PyObject*>
@@ -40,6 +69,10 @@ struct CppBuilder<PyObject*>
     return pyo;
   }
 };
+
+/**
+ * Primitives builders
+ */
 
 template <>
 struct CppBuilder<bool>
@@ -265,6 +298,10 @@ struct CppBuilder<double>
   }
 };
 
+/**
+ * Strings builders
+ */
+
 template <>
 struct CppBuilder<std::string>
 {
@@ -331,7 +368,9 @@ struct CppBuilder<std::wstring>
   }
 };
 
-template <class FUNCTOR> struct Using : FUNCTOR {};
+/**
+ * Tuple builder
+ */
 
 template <class TUPLE, std::size_t pos>
 void _feedCppTuple(TUPLE& tuple, PyObject* root)
@@ -372,6 +411,10 @@ struct CppBuilder<std::tuple<Args...>>
   }
 };
 
+/**
+ * Vector builder
+ */
+
 template <class FUNCTOR>
 struct CppBuilder<std::vector<FUNCTOR>>
 {
@@ -392,8 +435,8 @@ struct CppBuilder<std::vector<FUNCTOR>>
     throw std::invalid_argument("Not a PyList instance");
   }
 };
-template <class FUNCTOR>
-struct CppBuilder<std::vector<Using<FUNCTOR>>> : CppBuilder<std::vector<FUNCTOR>> {};
+
+template <class FUNCTOR>   struct CppBuilder<std::vector<Using<FUNCTOR>>>      : CppBuilder<std::vector<FUNCTOR>> {};
 
 template<>                 struct CppBuilder<std::vector<PyObject*>>           : CppBuilder<std::vector<CppBuilder<PyObject*>>> {};
 template<>                 struct CppBuilder<std::vector<bool>>                : CppBuilder<std::vector<CppBuilder<bool>>> {};
@@ -410,6 +453,10 @@ template<class... Args>    struct CppBuilder<std::vector<std::tuple<Args...>>> :
 template<class T>          struct CppBuilder<std::vector<std::vector<T>>>      : CppBuilder<std::vector<CppBuilder<std::vector<T>>>> {};
 template<class T>          struct CppBuilder<std::vector<std::set<T>>>         : CppBuilder<std::vector<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::vector<std::map<K,T>>>       : CppBuilder<std::vector<CppBuilder<std::map<K,T>>>> {};
+
+/**
+ * Set builder
+ */
 
 template <class FUNCTOR>
 struct CppBuilder<std::set<FUNCTOR>>
@@ -439,8 +486,8 @@ struct CppBuilder<std::set<FUNCTOR>>
     throw std::invalid_argument("Not a PySet instance");
   }
 };
-template <class FUNCTOR>
-struct CppBuilder<std::set<Using<FUNCTOR>>> : CppBuilder<std::set<FUNCTOR>> {};
+
+template <class FUNCTOR>   struct CppBuilder<std::set<Using<FUNCTOR>>>      : CppBuilder<std::set<FUNCTOR>> {};
 
 template<>                 struct CppBuilder<std::set<PyObject*>>           : CppBuilder<std::set<CppBuilder<PyObject*>>> {};
 template<>                 struct CppBuilder<std::set<bool>>                : CppBuilder<std::set<CppBuilder<bool>>> {};
@@ -457,6 +504,10 @@ template<class... Args>    struct CppBuilder<std::set<std::tuple<Args...>>> : Cp
 template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : CppBuilder<std::set<CppBuilder<std::vector<T>>>> {};
 template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
 template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
+
+/**
+ * Map builder
+ */
 
 template <class F_KEY, class F_VALUE>
 struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
@@ -479,11 +530,9 @@ struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
-template <class F_KEY, class F_VALUE>
-struct CppBuilder<std::map<Using<F_KEY>, Using<F_VALUE>>> : CppBuilder<std::map<Using<F_KEY>,F_VALUE>> {};
 
-template <class K, class F_VALUE>
-struct CppBuilder<std::map<K,F_VALUE>> : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
+template <class F_KEY, class F_VALUE> struct CppBuilder<std::map<Using<F_KEY>, Using<F_VALUE>>> : CppBuilder<std::map<Using<F_KEY>,F_VALUE>> {};
+template <class K, class F_VALUE>     struct CppBuilder<std::map<K,F_VALUE>>                    : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
 
 template<class U>                   struct CppBuilder<std::map<U,PyObject*>>           : CppBuilder<std::map<U,CppBuilder<PyObject*>>> {};
 template<class U>                   struct CppBuilder<std::map<U,bool>>                : CppBuilder<std::map<U,CppBuilder<bool>>> {};
@@ -501,12 +550,9 @@ template<class U, class T>          struct CppBuilder<std::map<U,std::vector<T>>
 template<class U, class T>          struct CppBuilder<std::map<U,std::set<T>>>         : CppBuilder<std::map<U,CppBuilder<std::set<T>>>> {};
 template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>       : CppBuilder<std::map<U,CppBuilder<std::map<K,T>>>> {};
 
-template <class FUNCTOR>
-struct CppBuilder : FUNCTOR {};
-
-template <class OBJ, class... Args>
-struct FromTuple
-{};
+/**
+ * Objects builders
+ */
 
 template <class OBJ, class TUPLE, std::size_t pos>
 void _feedFromTuple(OBJ &obj, const TUPLE &callbacks, PyObject *root)
@@ -570,9 +616,6 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
   }
 };
 
-template <class OBJ, class... Args>
-struct FromDict
-{};
 
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
