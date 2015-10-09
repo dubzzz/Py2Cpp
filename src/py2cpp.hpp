@@ -584,24 +584,24 @@ struct CppBuilderHelper<OBJ, pos>
   inline void fromTuple(OBJ& obj, PyObject* pyo) const {}
 };
 
-template <class OBJ, std::size_t pos, class T, class... Args>
-struct CppBuilderHelper<OBJ,pos,T,Args...>
+template <class OBJ, std::size_t pos, class FUNCTOR, class... Args>
+struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
 {
-  const std::pair<std::string, std::function<void(OBJ&, T)>> callback;
+  const std::pair<std::string, std::function<void(OBJ&, typename FUNCTOR::value_type)>> callback;
   const CppBuilderHelper<OBJ, pos +1, Args...> subBuilder;
   
   // tuple's constructors
-  CppBuilderHelper(std::function<void(OBJ&, T)> fun, std::function<void(OBJ&, Args)>... args)
+  CppBuilderHelper(std::function<void(OBJ&, typename FUNCTOR::value_type)> fun, std::function<void(OBJ&, typename Args::value_type)>... args)
       : callback(make_mapping("", fun)), subBuilder(args...)
   {}
-  CppBuilderHelper(T OBJ::*member, Args OBJ::*... args)
+  CppBuilderHelper(typename FUNCTOR::value_type OBJ::*member, typename Args::value_type OBJ::*... args)
       : callback(make_mapping("", member)), subBuilder(args...)
   {}
   
   // full constructors  
   CppBuilderHelper(
-        std::pair<std::string, std::function<void(OBJ&, T)>> callback
-        , std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
+        std::pair<std::string, std::function<void(OBJ&, typename FUNCTOR::value_type)>> callback
+        , std::pair<std::string, std::function<void(OBJ&, typename Args::value_type)>>... args)
       : callback(callback), subBuilder(args...)
   {}
   
@@ -610,7 +610,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
     PyObject *pyo_item { PyDict_GetItemString(pyo, callback.first.c_str()) };
     if (pyo_item)
     {
-      T value { CppBuilder<T>()(pyo_item) };
+      typename FUNCTOR::value_type value { FUNCTOR()(pyo_item) };
       callback.second(obj, value);
     }
     subBuilder.fromDict(obj, pyo);
@@ -621,7 +621,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
     if (PyObject_HasAttrString(pyo, callback.first.c_str()))
     {
       std::unique_ptr<PyObject, decref> pyo_item { PyObject_GetAttrString(pyo, callback.first.c_str()) };
-      T value { CppBuilder<T>()(pyo_item.get()) };
+      typename FUNCTOR::value_type value { FUNCTOR()(pyo_item.get()) };
       callback.second(obj, value);
     }
     subBuilder.fromObject(obj, pyo);
@@ -629,7 +629,7 @@ struct CppBuilderHelper<OBJ,pos,T,Args...>
   
   inline void fromTuple(OBJ& obj, PyObject* pyo) const
   {
-    T value { CppBuilder<T>()(PyTuple_GetItem(pyo, pos)) };
+    typename FUNCTOR::value_type value { FUNCTOR()(PyTuple_GetItem(pyo, pos)) };
     callback.second(obj, value);
     subBuilder.fromTuple(obj, pyo);
   }
@@ -639,7 +639,7 @@ template <class OBJ, class... Args>
 struct CppBuilder<FromTuple<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  const CppBuilderHelper<OBJ, 0, Args...> subBuilder;
+  const CppBuilderHelper<OBJ, 0, CppBuilder<Args>...> subBuilder;
   
   CppBuilder(std::function<void(OBJ&, Args)>... args)
       : subBuilder(args...)
@@ -678,7 +678,7 @@ template <class OBJ, class... Args>
 struct CppBuilder<FromDict<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  CppBuilderHelper<OBJ, 0, Args...> subBuilder;
+  CppBuilderHelper<OBJ, 0, CppBuilder<Args>...> subBuilder;
   
   CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
       : subBuilder(args...)
