@@ -574,38 +574,6 @@ template <class OBJ, class... Args>
 struct FromDict
 {};
 
-template <class OBJ, class TUPLE, std::size_t pos>
-void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{}
-
-template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
-void _feedFromDict(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{
-  PyObject *pyo { PyDict_GetItemString(root, std::get<pos>(callbacks).first.c_str()) };
-  if (pyo)
-  {
-    T value { CppBuilder<T>()(pyo) };
-    std::get<pos>(callbacks).second(obj, value);
-  }
-  _feedFromDict<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
-}
-
-template <class OBJ, class TUPLE, std::size_t pos>
-void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{}
-
-template <class OBJ, class TUPLE, std::size_t pos, class T, class... Args>
-void _feedFromObject(OBJ &obj, const TUPLE &callbacks, PyObject *root)
-{
-  if (PyObject_HasAttrString(root, std::get<pos>(callbacks).first.c_str()))
-  {
-    std::unique_ptr<PyObject, decref> pyo { PyObject_GetAttrString(root, std::get<pos>(callbacks).first.c_str()) };
-    T value { CppBuilder<T>()(pyo.get()) };
-    std::get<pos>(callbacks).second(obj, value);
-  }
-  _feedFromObject<OBJ, TUPLE, pos +1, Args...>(obj, callbacks, root);
-}
-
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
 {
@@ -625,30 +593,75 @@ inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const st
 }
 
 template <class OBJ, class... Args>
+struct CppBuilderHelper;
+
+template <class OBJ>
+struct CppBuilderHelper<OBJ>
+{
+  CppBuilderHelper() {}
+  void fromDict(OBJ& obj, PyObject* pyo) const {}
+  void fromObject(OBJ& obj, PyObject* pyo) const {}
+};
+
+template <class OBJ, class T, class... Args>
+struct CppBuilderHelper<OBJ,T,Args...>
+{
+  std::pair<std::string, std::function<void(OBJ&, T)>> callback;
+  CppBuilderHelper<OBJ, Args...> subBuilder;
+  
+  CppBuilderHelper(
+        std::pair<std::string, std::function<void(OBJ&, T)>> callback
+        , std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
+      : callback(callback), subBuilder(args...)
+  {}
+  
+  void fromDict(OBJ& obj, PyObject* pyo) const
+  {
+    PyObject *pyo_item { PyDict_GetItemString(pyo, callback.first.c_str()) };
+    if (pyo_item)
+    {
+      T value { CppBuilder<T>()(pyo_item) };
+      callback.second(obj, value);
+    }
+    subBuilder.fromDict(obj, pyo);
+  }
+  
+  void fromObject(OBJ& obj, PyObject* pyo) const
+  {
+    if (PyObject_HasAttrString(pyo, callback.first.c_str()))
+    {
+      std::unique_ptr<PyObject, decref> pyo_item { PyObject_GetAttrString(pyo, callback.first.c_str()) };
+      T value { CppBuilder<T>()(pyo_item.get()) };
+      callback.second(obj, value);
+    }
+    subBuilder.fromObject(obj, pyo);
+  }
+};
+
+template <class OBJ, class... Args>
 struct CppBuilder<FromDict<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...> callbacks;
+  CppBuilderHelper<OBJ, Args...> subBuilder;
   
   CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
-    : callbacks(std::make_tuple(args...))
+      : subBuilder(args...)
   {}
   
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
+    
+    OBJ obj;
     if (PyDict_Check(pyo))
     {
-      OBJ obj;
-      _feedFromDict<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(obj, callbacks, pyo);
-      return obj;
+      subBuilder.fromDict(obj, pyo);
     }
     else
     {
-      OBJ obj;
-      _feedFromObject<OBJ, std::tuple<std::pair<std::string, std::function<void(OBJ&, Args)>>...>, 0, Args...>(obj, callbacks, pyo);
-      return obj;
+      subBuilder.fromObject(obj, pyo);
     }
+    return obj;
   }
 };
 
