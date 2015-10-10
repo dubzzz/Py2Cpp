@@ -4,6 +4,7 @@
 *.o
 *.obj
 build/*
+examples/**/build/*
 
 # Precompiled Headers
 *.gch

@@ -6,6 +6,7 @@
 #include <cassert>
 #include <climits>
 #include <functional>
+#include <memory>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -15,6 +16,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <vector>
 
 namespace dubzzz {
 namespace Py2Cpp {

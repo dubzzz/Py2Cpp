@@ -3,12 +3,12 @@ ifeq ($(origin GXX), undefined)
 else
 	CC=$(GXX)
 endif
-CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g") -fprofile-arcs -ftest-coverage
-LDFLAGS=$(shell python-config --ldflags) -fprofile-arcs
+CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g")
+LDFLAGS=$(shell python-config --ldflags)
 CGTEST=-I/usr/local/include
 LDGTEST=-L/usr/local/lib -lgtest
 
-all: build
+all: build examples
 
 # *.o files compilation
 
@@ -28,6 +28,15 @@ build: build/py2cpp.out
 
 test: build/py2cpp.out
 	./build/py2cpp.out
+
+alltests: test
+	make test -C examples
+
+cleanall: clean
+	make clean -C examples
+
+examples:
+	make -C examples
 
 clean:
 	rm -rf build

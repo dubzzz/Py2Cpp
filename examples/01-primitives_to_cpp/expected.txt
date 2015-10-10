@@ -1,0 +1,2 @@
+read_boolean: true
+read_boolean: false

@@ -20,7 +20,7 @@ compiler:
   - g++
 
 script:
-  - make test
+  - make alltests
 
 after_success:
   - coveralls --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp' --exclude test
