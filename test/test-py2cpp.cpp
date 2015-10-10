@@ -557,6 +557,43 @@ namespace
             , make_mapping("z", &Point::z)) {}
     };
   };
+  class Line
+  {
+    Point pt1, pt2;
+    bool oriented;
+  
+  public:
+    Line() : pt1(), pt2(), oriented(false) {}
+    Line(const Point &pt1, const Point &pt2, bool oriented) : pt1(pt1), pt2(pt2), oriented(oriented) {}
+    Line(const Line&) = default;
+    bool operator==(const Line& l) const {return pt1 == l.pt1 && pt2 == l.pt2 && oriented == l.oriented;}
+    
+    struct FromPy : CppBuilder<FromDict<Line, Point::FromPy, Point::FromPy, bool>>
+    {
+      FromPy() : CppBuilder<FromDict<Line, Point::FromPy, Point::FromPy, bool>>(
+            make_mapping("pt1", &Line::pt1)
+            , make_mapping("pt2", &Line::pt2)
+            , make_mapping("oriented", &Line::oriented)) {}
+    };
+  };
+  class Path
+  {
+    std::vector<Point> path;
+    unsigned int length;
+  
+  public:
+    Path() : path(), length(0) {}
+    Path(const std::vector<Point> &path, unsigned int length) : path(path), length(length) {}
+    Path(const Path&) = default;
+    bool operator==(const Path& p) const {return path == p.path && length == p.length;}
+    
+    struct FromPy : CppBuilder<FromDict<Path, std::vector<Point::FromPy>, unsigned int>>
+    {
+      FromPy() : CppBuilder<FromDict<Path, std::vector<Point::FromPy>, unsigned int>>(
+            make_mapping("path", &Path::path)
+            , make_mapping("length", &Path::length)) {}
+    };
+  };
 }
 
 TEST(CppBuilder_struct, FromTuple)
@@ -605,7 +642,7 @@ TEST(CppBuilder_struct, FromObject)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_struct, VectorOf)
+TEST(CppBuilder_struct, VectorOfStructs)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("[(1, 3, 4), (1, 5, 5), (0, -1, 0)]", Py_eval_input, py_dict, NULL) };
   Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
@@ -619,7 +656,7 @@ TEST(CppBuilder_struct, VectorOf)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_struct, SetOf)
+TEST(CppBuilder_struct, SetOfStructs)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("set([(1, 3, 4), (1, 5, 5), (0, -1, 0)])", Py_eval_input, py_dict, NULL) };
   Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
@@ -633,7 +670,7 @@ TEST(CppBuilder_struct, SetOf)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_struct, MapOf)
+TEST(CppBuilder_struct, MapOfIntStructs)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'x': (1, 0, 4), 'y': (0, 5, 9)}", Py_eval_input, py_dict, NULL) };
   Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
@@ -648,7 +685,7 @@ TEST(CppBuilder_struct, MapOf)
   EXPECT_FALSE(uncaught_exception());
 }
 
-TEST(CppBuilder_struct, MapOfKeysAndValues)
+TEST(CppBuilder_struct, MapOfKeysStructAndValuesStruct)
 {
   std::unique_ptr<PyObject, decref> pyo { PyRun_String("{(0, 0, 0): (1, 0, 4), (1, 1, 2): (0, 5, 9)}", Py_eval_input, py_dict, NULL) };
   Point keys[] = { { 0, 0, 0 }, { 1, 1, 2 } };
@@ -661,6 +698,29 @@ TEST(CppBuilder_struct, MapOfKeysAndValues)
   EXPECT_NE(ret.end(), ret.find(keys[1]));
   EXPECT_EQ(pts[0], ret.find(keys[0])->second);
   EXPECT_EQ(pts[1], ret.find(keys[1])->second);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, StructOfStructs)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'oriented': True, 'pt1': (0, 0, 0), 'pt2': (1, 0, 4)}", Py_eval_input, py_dict, NULL) };
+  Point pt1 { 0, 0, 0 };
+  Point pt2 { 1, 0, 4 };
+  Line line { pt1, pt2, true };
+
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(line, Line::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, StructOfComplexStructs)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'length': 56, 'path': [(0, 0, 0), (1, 0, 4), (1, 1, 2), (0, 5, 9)]}", Py_eval_input, py_dict, NULL) };
+  std::vector<Point> pts = { { 0, 0, 0 }, { 1, 0, 4 }, { 1, 1, 2 }, { 0, 5, 9 } };
+  Path path { pts, 56 };
+
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(path, Path::FromPy()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 

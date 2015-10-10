@@ -554,6 +554,22 @@ template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>
  * Objects builders
  */
 
+template <class T>          struct ToBuildable                      : T {};
+template <>                 struct ToBuildable<bool>                : CppBuilder<bool> {};
+template <>                 struct ToBuildable<int>                 : CppBuilder<int> {};
+template <>                 struct ToBuildable<unsigned int>        : CppBuilder<unsigned int> {};
+template <>                 struct ToBuildable<long>                : CppBuilder<long> {};
+template <>                 struct ToBuildable<unsigned long>       : CppBuilder<unsigned long> {};
+template <>                 struct ToBuildable<long long>           : CppBuilder<long long> {};
+template <>                 struct ToBuildable<unsigned long long>  : CppBuilder<unsigned long long> {};
+template <>                 struct ToBuildable<double>              : CppBuilder<double> {};
+template <>                 struct ToBuildable<std::string>         : CppBuilder<std::string> {};
+template <>                 struct ToBuildable<std::wstring>        : CppBuilder<std::wstring> {};
+template <class... Args>    struct ToBuildable<std::tuple<Args...>> : CppBuilder<std::tuple<Args...>> {};
+template <class T>          struct ToBuildable<std::vector<T>>      : CppBuilder<std::vector<T>> {};
+template <class T>          struct ToBuildable<std::set<T>>         : CppBuilder<std::set<T>> {};
+template <class K, class T> struct ToBuildable<std::map<K,T>>       : CppBuilder<std::map<K,T>> {};
+
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
 {
@@ -639,13 +655,13 @@ template <class OBJ, class... Args>
 struct CppBuilder<FromTuple<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  const CppBuilderHelper<OBJ, 0, CppBuilder<Args>...> subBuilder;
+  const CppBuilderHelper<OBJ, 0, ToBuildable<Args>...> subBuilder;
   
-  CppBuilder(std::function<void(OBJ&, Args)>... args)
+  CppBuilder(std::function<void(OBJ&, typename ToBuildable<Args>::value_type)>... args)
       : subBuilder(args...)
   {}
   
-  CppBuilder(Args OBJ::*... args)
+  CppBuilder(typename ToBuildable<Args>::value_type OBJ::*... args)
       : subBuilder(args...)
   {}
   
@@ -678,9 +694,9 @@ template <class OBJ, class... Args>
 struct CppBuilder<FromDict<OBJ, Args...>>
 {
   typedef OBJ value_type;
-  CppBuilderHelper<OBJ, 0, CppBuilder<Args>...> subBuilder;
+  CppBuilderHelper<OBJ, 0, ToBuildable<Args>...> subBuilder;
   
-  CppBuilder(std::pair<std::string, std::function<void(OBJ&, Args)>>... args)
+  CppBuilder(std::pair<std::string, std::function<void(OBJ&, typename ToBuildable<Args>::value_type)>>... args)
       : subBuilder(args...)
   {}
   
