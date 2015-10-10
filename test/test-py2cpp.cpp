@@ -473,6 +473,26 @@ TEST(CppBuilder_tuple, FromTuple)
   EXPECT_FALSE(uncaught_exception());
 }
 
+TEST(CppBuilder_tuple, FromTooSmallTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+
+  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
+  EXPECT_THROW(Functor(pyo.get()), std::length_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_tuple, FromTooLargeTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 'toto', 2)", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+
+  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
+  EXPECT_THROW(Functor(pyo.get()), std::length_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
 /** vector **/
 
 TEST(CppBuilder_vector, FromList)
@@ -602,6 +622,22 @@ TEST(CppBuilder_struct, FromTuple)
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, FromTooSmallTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_struct, FromTooLargeTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 2, 3, 4)", Py_eval_input, py_dict, NULL) };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
   EXPECT_FALSE(uncaught_exception());
 }
 
