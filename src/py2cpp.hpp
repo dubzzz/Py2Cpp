@@ -37,16 +37,6 @@ struct decref
   }
 };
 
-// Templated class used to help the compiler understand
-// the given parameter is a builder and not a simple primative or basic structure
-//
-// Syntax:
-//    Using<CppBuilder<T>> can be used in CppBuilder<std::map<Using<CppBuilder<T>>, int>>>
-//    nb.: Using must be used when dealing with customs objects as keys of std::map
-//         otherwise they are not needed but can be used
-template <class FUNCTOR> struct Using : FUNCTOR {};
-
-
 // FromTuple and FromDict are used to build cutsom and complex objects
 // based on dicts or classes
 // Syntax:

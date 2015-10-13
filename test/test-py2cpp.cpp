@@ -728,7 +728,7 @@ TEST(CppBuilder_struct, MapOfKeysStructAndValuesStruct)
   Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
   
   ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::map<Using<Point::FromPy>, Point::FromPy>>()(pyo.get());
+  auto ret = CppBuilder<std::map<Point::FromPy, Point::FromPy>>()(pyo.get());
   EXPECT_EQ(2, ret.size());
   EXPECT_NE(ret.end(), ret.find(keys[0]));
   EXPECT_NE(ret.end(), ret.find(keys[1]));
