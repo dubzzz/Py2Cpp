@@ -1,2 +1,4 @@
 read_boolean: true
 read_boolean: false
+read_int: 5
+read_double: 5.5
