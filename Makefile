@@ -29,7 +29,9 @@ build: build/py2cpp.out
 test: build/py2cpp.out
 	./build/py2cpp.out
 
-alltests: test
+alltests: extests test
+
+extests:
 	make test -C examples
 
 cleanall: clean
