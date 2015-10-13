@@ -435,10 +435,10 @@ template <class... Args> struct ToBuildable<std::tuple<Args...>> : CppBuilder<st
  * Vector builder
  */
 
-template <class FUNCTOR>
-struct CppBuilder<std::vector<FUNCTOR>>
+template <class T>
+struct CppBuilder<std::vector<T>>
 {
-  typedef std::vector<typename FUNCTOR::value_type> value_type;
+  typedef std::vector<typename ToBuildable<T>::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -448,7 +448,7 @@ struct CppBuilder<std::vector<FUNCTOR>>
       value_type v(PyList_Size(pyo));
       for (typename value_type::iterator it { v.begin() } ; it != v.end() ; ++it, ++i)
       {
-        *it = FUNCTOR()(PyList_GetItem(pyo, i));
+        *it = ToBuildable<T>()(PyList_GetItem(pyo, i));
       }
       return v;
     }
@@ -457,32 +457,14 @@ struct CppBuilder<std::vector<FUNCTOR>>
 };
 template <class T> struct ToBuildable<std::vector<T>> : CppBuilder<std::vector<T>> {};
 
-template <class FUNCTOR>   struct CppBuilder<std::vector<Using<FUNCTOR>>>      : CppBuilder<std::vector<FUNCTOR>> {};
-
-template<>                 struct CppBuilder<std::vector<PyObject*>>           : CppBuilder<std::vector<CppBuilder<PyObject*>>> {};
-template<>                 struct CppBuilder<std::vector<bool>>                : CppBuilder<std::vector<CppBuilder<bool>>> {};
-template<>                 struct CppBuilder<std::vector<int>>                 : CppBuilder<std::vector<CppBuilder<int>>> {};
-template<>                 struct CppBuilder<std::vector<unsigned int>>        : CppBuilder<std::vector<CppBuilder<unsigned int>>> {};
-template<>                 struct CppBuilder<std::vector<long>>                : CppBuilder<std::vector<CppBuilder<long>>> {};
-template<>                 struct CppBuilder<std::vector<unsigned long>>       : CppBuilder<std::vector<CppBuilder<unsigned long>>> {};
-template<>                 struct CppBuilder<std::vector<long long>>           : CppBuilder<std::vector<CppBuilder<long long>>> {};
-template<>                 struct CppBuilder<std::vector<unsigned long long>>  : CppBuilder<std::vector<CppBuilder<unsigned long long>>> {};
-template<>                 struct CppBuilder<std::vector<double>>              : CppBuilder<std::vector<CppBuilder<double>>> {};
-template<>                 struct CppBuilder<std::vector<std::string>>         : CppBuilder<std::vector<CppBuilder<std::string>>> {};
-template<>                 struct CppBuilder<std::vector<std::wstring>>        : CppBuilder<std::vector<CppBuilder<std::wstring>>> {};
-template<class... Args>    struct CppBuilder<std::vector<std::tuple<Args...>>> : CppBuilder<std::vector<CppBuilder<std::tuple<Args...>>>> {};
-template<class T>          struct CppBuilder<std::vector<std::vector<T>>>      : CppBuilder<std::vector<CppBuilder<std::vector<T>>>> {};
-template<class T>          struct CppBuilder<std::vector<std::set<T>>>         : CppBuilder<std::vector<CppBuilder<std::set<T>>>> {};
-template<class K, class T> struct CppBuilder<std::vector<std::map<K,T>>>       : CppBuilder<std::vector<CppBuilder<std::map<K,T>>>> {};
-
 /**
  * Set builder
  */
 
-template <class FUNCTOR>
-struct CppBuilder<std::set<FUNCTOR>>
+template <class T>
+struct CppBuilder<std::set<T>>
 {
-  typedef std::set<typename FUNCTOR::value_type> value_type;
+  typedef std::set<typename ToBuildable<T>::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -495,7 +477,7 @@ struct CppBuilder<std::set<FUNCTOR>>
       {
         PyObject* popped { PySet_Pop(pyo) };
         backup[i] = popped;
-        s.insert(FUNCTOR()(popped));
+        s.insert(ToBuildable<T>()(popped));
       }
       for (PyObject* popped : backup)
       {
@@ -509,32 +491,14 @@ struct CppBuilder<std::set<FUNCTOR>>
 };
 template <class T> struct ToBuildable<std::set<T>> : CppBuilder<std::set<T>> {};
 
-template <class FUNCTOR>   struct CppBuilder<std::set<Using<FUNCTOR>>>      : CppBuilder<std::set<FUNCTOR>> {};
-
-template<>                 struct CppBuilder<std::set<PyObject*>>           : CppBuilder<std::set<CppBuilder<PyObject*>>> {};
-template<>                 struct CppBuilder<std::set<bool>>                : CppBuilder<std::set<CppBuilder<bool>>> {};
-template<>                 struct CppBuilder<std::set<int>>                 : CppBuilder<std::set<CppBuilder<int>>> {};
-template<>                 struct CppBuilder<std::set<unsigned int>>        : CppBuilder<std::set<CppBuilder<unsigned int>>> {};
-template<>                 struct CppBuilder<std::set<long>>                : CppBuilder<std::set<CppBuilder<long>>> {};
-template<>                 struct CppBuilder<std::set<unsigned long>>       : CppBuilder<std::set<CppBuilder<unsigned long>>> {};
-template<>                 struct CppBuilder<std::set<long long>>           : CppBuilder<std::set<CppBuilder<long long>>> {};
-template<>                 struct CppBuilder<std::set<unsigned long long>>  : CppBuilder<std::set<CppBuilder<unsigned long long>>> {};
-template<>                 struct CppBuilder<std::set<double>>              : CppBuilder<std::set<CppBuilder<double>>> {};
-template<>                 struct CppBuilder<std::set<std::string>>         : CppBuilder<std::set<CppBuilder<std::string>>> {};
-template<>                 struct CppBuilder<std::set<std::wstring>>        : CppBuilder<std::set<CppBuilder<std::wstring>>> {};
-template<class... Args>    struct CppBuilder<std::set<std::tuple<Args...>>> : CppBuilder<std::set<CppBuilder<std::tuple<Args...>>>> {};
-template<class T>          struct CppBuilder<std::set<std::vector<T>>>      : CppBuilder<std::set<CppBuilder<std::vector<T>>>> {};
-template<class T>          struct CppBuilder<std::set<std::set<T>>>         : CppBuilder<std::set<CppBuilder<std::set<T>>>> {};
-template<class K, class T> struct CppBuilder<std::set<std::map<K,T>>>       : CppBuilder<std::set<CppBuilder<std::map<K,T>>>> {};
-
 /**
  * Map builder
  */
 
-template <class F_KEY, class F_VALUE>
-struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
+template <class K, class T>
+struct CppBuilder<std::map<K,T>>
 {
-  typedef std::map<typename F_KEY::value_type, typename F_VALUE::value_type> value_type;
+  typedef std::map<typename ToBuildable<K>::value_type, typename ToBuildable<T>::value_type> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -545,7 +509,7 @@ struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
       Py_ssize_t pos = 0;
       while (PyDict_Next(pyo, &pos, &key, &value))
       {
-        dict[F_KEY()(key)] = F_VALUE()(value);
+        dict[ToBuildable<K>()(key)] = ToBuildable<T>()(value);
       }
       return dict;
     }
@@ -553,25 +517,6 @@ struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
   }
 };
 template <class K, class T> struct ToBuildable<std::map<K,T>> : CppBuilder<std::map<K,T>> {};
-
-template <class F_KEY, class F_VALUE> struct CppBuilder<std::map<Using<F_KEY>, Using<F_VALUE>>> : CppBuilder<std::map<Using<F_KEY>,F_VALUE>> {};
-template <class K, class F_VALUE>     struct CppBuilder<std::map<K,F_VALUE>>                    : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
-
-template<class U>                   struct CppBuilder<std::map<U,PyObject*>>           : CppBuilder<std::map<U,CppBuilder<PyObject*>>> {};
-template<class U>                   struct CppBuilder<std::map<U,bool>>                : CppBuilder<std::map<U,CppBuilder<bool>>> {};
-template<class U>                   struct CppBuilder<std::map<U,int>>                 : CppBuilder<std::map<U,CppBuilder<int>>> {};
-template<class U>                   struct CppBuilder<std::map<U,unsigned int>>        : CppBuilder<std::map<U,CppBuilder<unsigned int>>> {};
-template<class U>                   struct CppBuilder<std::map<U,long>>                : CppBuilder<std::map<U,CppBuilder<long>>> {};
-template<class U>                   struct CppBuilder<std::map<U,unsigned long>>       : CppBuilder<std::map<U,CppBuilder<unsigned long>>> {};
-template<class U>                   struct CppBuilder<std::map<U,long long>>           : CppBuilder<std::map<U,CppBuilder<long long>>> {};
-template<class U>                   struct CppBuilder<std::map<U,unsigned long long>>  : CppBuilder<std::map<U,CppBuilder<unsigned long long>>> {};
-template<class U>                   struct CppBuilder<std::map<U,double>>              : CppBuilder<std::map<U,CppBuilder<double>>> {};
-template<class U>                   struct CppBuilder<std::map<U,std::string>>         : CppBuilder<std::map<U,CppBuilder<std::string>>> {};
-template<class U>                   struct CppBuilder<std::map<U,std::wstring>>        : CppBuilder<std::map<U,CppBuilder<std::wstring>>> {};
-template<class U, class... Args>    struct CppBuilder<std::map<U,std::tuple<Args...>>> : CppBuilder<std::map<U,CppBuilder<std::tuple<Args...>>>> {};
-template<class U, class T>          struct CppBuilder<std::map<U,std::vector<T>>>      : CppBuilder<std::map<U,CppBuilder<std::vector<T>>>> {};
-template<class U, class T>          struct CppBuilder<std::map<U,std::set<T>>>         : CppBuilder<std::map<U,CppBuilder<std::set<T>>>> {};
-template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>       : CppBuilder<std::map<U,CppBuilder<std::map<K,T>>>> {};
 
 /**
  * Objects builders
