@@ -23,5 +23,5 @@ script:
   - make alltests
 
 after_success:
-  - coveralls --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp' --exclude test
+  - coveralls --gcov-options '\-lp' --exclude test --exclude src/main.cpp --include examples/01-primitives_to_cpp --include examples/02-to_cpp_containers
 
