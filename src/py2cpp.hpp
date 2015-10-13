@@ -58,6 +58,12 @@ template <class OBJ, class... Args> struct FromDict {};
 template <class T> struct CppBuilder;
 
 /**
+ * Internal structures
+ */
+
+template <class T> struct ToBuildable : T {};
+
+/**
  * Identity builder
  */
 
@@ -71,6 +77,7 @@ struct CppBuilder<PyObject*>
     return pyo;
   }
 };
+template <> struct ToBuildable<PyObject*> : CppBuilder<PyObject*> {};
 
 /**
  * Primitives builders
@@ -90,6 +97,7 @@ struct CppBuilder<bool>
     throw std::invalid_argument("Not a PyBool instance");
   }
 };
+template <> struct ToBuildable<bool> : CppBuilder<bool> {};
 
 template <>
 struct CppBuilder<int>
@@ -119,6 +127,7 @@ struct CppBuilder<int>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<int> : CppBuilder<int> {};
 
 template <>
 struct CppBuilder<unsigned int>
@@ -153,6 +162,7 @@ struct CppBuilder<unsigned int>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<unsigned int> : CppBuilder<unsigned int> {};
 
 template <>
 struct CppBuilder<long>
@@ -178,6 +188,7 @@ struct CppBuilder<long>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<long> : CppBuilder<long> {};
 
 template <>
 struct CppBuilder<unsigned long>
@@ -208,6 +219,7 @@ struct CppBuilder<unsigned long>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<unsigned long> : CppBuilder<unsigned long> {};
 
 template <>
 struct CppBuilder<long long>
@@ -233,6 +245,7 @@ struct CppBuilder<long long>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<long long> : CppBuilder<long long> {};
 
 template <>
 struct CppBuilder<unsigned long long>
@@ -264,6 +277,7 @@ struct CppBuilder<unsigned long long>
     throw std::invalid_argument("Not a PyLong instance");
   }
 };
+template <> struct ToBuildable<unsigned long long> : CppBuilder<unsigned long long> {};
 
 template <>
 struct CppBuilder<double>
@@ -299,6 +313,7 @@ struct CppBuilder<double>
     throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
   }
 };
+template <> struct ToBuildable<double> : CppBuilder<double> {};
 
 /**
  * Strings builders
@@ -335,6 +350,7 @@ struct CppBuilder<std::string>
     throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
 };
+template <> struct ToBuildable<std::string> : CppBuilder<std::string> {};
 
 template <>
 struct CppBuilder<std::wstring>
@@ -369,6 +385,7 @@ struct CppBuilder<std::wstring>
     throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
 };
+template <> struct ToBuildable<std::wstring> : CppBuilder<std::wstring> {};
 
 /**
  * Tuple builder
@@ -412,6 +429,7 @@ struct CppBuilder<std::tuple<Args...>>
     throw std::invalid_argument("Not a PyTuple instance");
   }
 };
+template <class... Args> struct ToBuildable<std::tuple<Args...>> : CppBuilder<std::tuple<Args...>> {};
 
 /**
  * Vector builder
@@ -437,6 +455,7 @@ struct CppBuilder<std::vector<FUNCTOR>>
     throw std::invalid_argument("Not a PyList instance");
   }
 };
+template <class T> struct ToBuildable<std::vector<T>> : CppBuilder<std::vector<T>> {};
 
 template <class FUNCTOR>   struct CppBuilder<std::vector<Using<FUNCTOR>>>      : CppBuilder<std::vector<FUNCTOR>> {};
 
@@ -488,6 +507,7 @@ struct CppBuilder<std::set<FUNCTOR>>
     throw std::invalid_argument("Not a PySet instance");
   }
 };
+template <class T> struct ToBuildable<std::set<T>> : CppBuilder<std::set<T>> {};
 
 template <class FUNCTOR>   struct CppBuilder<std::set<Using<FUNCTOR>>>      : CppBuilder<std::set<FUNCTOR>> {};
 
@@ -532,6 +552,7 @@ struct CppBuilder<std::map<Using<F_KEY>,F_VALUE>>
     throw std::invalid_argument("Not a PyDict instance");
   }
 };
+template <class K, class T> struct ToBuildable<std::map<K,T>> : CppBuilder<std::map<K,T>> {};
 
 template <class F_KEY, class F_VALUE> struct CppBuilder<std::map<Using<F_KEY>, Using<F_VALUE>>> : CppBuilder<std::map<Using<F_KEY>,F_VALUE>> {};
 template <class K, class F_VALUE>     struct CppBuilder<std::map<K,F_VALUE>>                    : CppBuilder<std::map<Using<CppBuilder<K>>,F_VALUE>> {};
@@ -555,22 +576,6 @@ template<class U, class K, class T> struct CppBuilder<std::map<U,std::map<K,T>>>
 /**
  * Objects builders
  */
-
-template <class T>          struct ToBuildable                      : T {};
-template <>                 struct ToBuildable<bool>                : CppBuilder<bool> {};
-template <>                 struct ToBuildable<int>                 : CppBuilder<int> {};
-template <>                 struct ToBuildable<unsigned int>        : CppBuilder<unsigned int> {};
-template <>                 struct ToBuildable<long>                : CppBuilder<long> {};
-template <>                 struct ToBuildable<unsigned long>       : CppBuilder<unsigned long> {};
-template <>                 struct ToBuildable<long long>           : CppBuilder<long long> {};
-template <>                 struct ToBuildable<unsigned long long>  : CppBuilder<unsigned long long> {};
-template <>                 struct ToBuildable<double>              : CppBuilder<double> {};
-template <>                 struct ToBuildable<std::string>         : CppBuilder<std::string> {};
-template <>                 struct ToBuildable<std::wstring>        : CppBuilder<std::wstring> {};
-template <class... Args>    struct ToBuildable<std::tuple<Args...>> : CppBuilder<std::tuple<Args...>> {};
-template <class T>          struct ToBuildable<std::vector<T>>      : CppBuilder<std::vector<T>> {};
-template <class T>          struct ToBuildable<std::set<T>>         : CppBuilder<std::set<T>> {};
-template <class K, class T> struct ToBuildable<std::map<K,T>>       : CppBuilder<std::map<K,T>> {};
 
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, std::function<void(OBJ&,T)> fun)
