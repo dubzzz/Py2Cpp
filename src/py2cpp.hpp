@@ -467,7 +467,7 @@ struct CppBuilder<std::set<T>>
       {
         PyObject* popped { PySet_Pop(pyo) };
         elt = popped;
-        s.insert(ToBuildable<T>()(popped));
+        s.emplace(ToBuildable<T>()(popped));
       }
       for (auto& popped : backup)
       {
@@ -499,7 +499,7 @@ struct CppBuilder<std::map<K,T>>
       Py_ssize_t pos = 0;
       while (PyDict_Next(pyo, &pos, &key, &value))
       {
-        dict[ToBuildable<K>()(key)] = ToBuildable<T>()(value);
+        dict.emplace(ToBuildable<K>()(key), ToBuildable<T>()(value));
       }
       return dict;
     }
