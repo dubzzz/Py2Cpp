@@ -3,8 +3,8 @@ ifeq ($(origin GXX), undefined)
 else
 	CC=$(GXX)
 endif
-CFLAGS=-std=c++11 -Wall -I../../src $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g") --shared -fPIC
-LDFLAGS=$(shell python-config --ldflags) --shared -fPIC
+CFLAGS=-std=c++11 -Wall -I../../src $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g") -fprofile-arcs -ftest-coverage --shared -fPIC
+LDFLAGS=$(shell python-config --ldflags) -fprofile-arcs --shared -fPIC
 CGTEST=-I/usr/local/include
 
 all: build
