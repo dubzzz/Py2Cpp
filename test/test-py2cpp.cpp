@@ -522,6 +522,19 @@ TEST(CppBuilder_set, FromSet)
   EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
+TEST(CppBuilder_set, InputUnmodified)
+{
+  PyRun_SimpleString("CppBuilder_set_InputUnmodified = set([1,8,3])");
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("CppBuilder_set_InputUnmodified", Py_eval_input, py_dict, NULL) };
+  std::set<int> expected { 1, 8, 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+  
+  std::unique_ptr<PyObject, decref> pyo_check { PyRun_String("CppBuilder_set_InputUnmodified == set([1,8,3])", Py_eval_input, py_dict, NULL) };
+  EXPECT_TRUE(CppBuilder<bool>()(pyo_check.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
 
 /** map **/
 

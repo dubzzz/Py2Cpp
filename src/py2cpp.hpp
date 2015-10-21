@@ -461,15 +461,15 @@ struct CppBuilder<std::set<T>>
     if (PySet_Check(pyo))
     {
       long size { PySet_Size(pyo) };
-      std::vector<PyObject*> backup(size);
+      PyObject* backup[size];
       value_type s;
-      for (long i { 0 } ; i != size ; ++i)
+      for (auto& elt : backup)
       {
         PyObject* popped { PySet_Pop(pyo) };
-        backup[i] = popped;
+        elt = popped;
         s.insert(ToBuildable<T>()(popped));
       }
-      for (PyObject* popped : backup)
+      for (auto& popped : backup)
       {
         PySet_Add(pyo, popped);
         Py_DECREF(popped);
