@@ -527,7 +527,25 @@ inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const st
 template <class OBJ, class T>
 inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(const std::string &key, T OBJ::*member)
 {
-  return std::make_pair(key, [member](OBJ& obj, const T &value){ obj.*member = value; });
+  return std::make_pair(key, [member](OBJ& obj, T&& value){ obj.*member = std::move(value); });
+}
+
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(std::string&& key, std::function<void(OBJ&,T)> fun)
+{
+  return std::make_pair(std::move(key), fun);
+}
+
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(std::string&& key, void (OBJ::*fun)(T))
+{
+  return std::make_pair(std::move(key), fun);
+}
+
+template <class OBJ, class T>
+inline std::pair<std::string, std::function<void(OBJ&,T)>> make_mapping(std::string&& key, T OBJ::*member)
+{
+  return std::make_pair(std::move(key), [member](OBJ& obj, T&& value){ obj.*member = std::move(value); });
 }
 
 template <class OBJ, std::size_t pos, class... Args>
@@ -569,7 +587,7 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
     if (pyo_item)
     {
       typename FUNCTOR::value_type value { FUNCTOR()(pyo_item) };
-      callback.second(obj, value);
+      callback.second(obj, std::move(value));
     }
     subBuilder.fromDict(obj, pyo);
   }
@@ -580,7 +598,7 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
     {
       std::unique_ptr<PyObject, decref> pyo_item { PyObject_GetAttrString(pyo, callback.first.c_str()) };
       typename FUNCTOR::value_type value { FUNCTOR()(pyo_item.get()) };
-      callback.second(obj, value);
+      callback.second(obj, std::move(value));
     }
     subBuilder.fromObject(obj, pyo);
   }
@@ -588,7 +606,7 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
   inline void fromTuple(OBJ& obj, PyObject* pyo) const
   {
     typename FUNCTOR::value_type value { FUNCTOR()(PyTuple_GetItem(pyo, pos)) };
-    callback.second(obj, value);
+    callback.second(obj, std::move(value));
     subBuilder.fromTuple(obj, pyo);
   }
 };
