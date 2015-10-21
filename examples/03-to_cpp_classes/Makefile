@@ -14,7 +14,7 @@ clean:
 
 # *.o files compilation
 
-build/main.o: src/main.cpp
+build/main.o: src/main.cpp ../../src/py2cpp.hpp
 	mkdir -p build
 	$(CC) -o build/main.o -c src/main.cpp $(CFLAGS)
 
