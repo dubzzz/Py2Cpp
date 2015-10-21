@@ -382,13 +382,13 @@ template <> struct ToBuildable<std::wstring> : CppBuilder<std::wstring> {};
  */
 
 template <class TUPLE, std::size_t pos>
-void _feedCppTuple(TUPLE& tuple, PyObject* root)
+static inline void _feedCppTuple(TUPLE& tuple, PyObject* root)
 {}
 
 template <class TUPLE, std::size_t pos, class T, class... Args>
-void _feedCppTuple(TUPLE& tuple, PyObject* root)
+static inline void _feedCppTuple(TUPLE& tuple, PyObject* root)
 {
-  std::get<pos>(tuple) = CppBuilder<T>()(PyTuple_GetItem(root, pos));
+  std::get<pos>(tuple) = ToBuildable<T>()(PyTuple_GetItem(root, pos));
   _feedCppTuple<TUPLE, pos +1, Args...>(tuple, root);
 }
 
