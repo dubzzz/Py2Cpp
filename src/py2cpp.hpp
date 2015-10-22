@@ -395,7 +395,7 @@ static inline void _feedCppTuple(TUPLE& tuple, PyObject* root)
 template <class... Args>
 struct CppBuilder<std::tuple<Args...>>
 {
-  typedef std::tuple<Args...> value_type;
+  typedef std::tuple<typename ToBuildable<Args>::value_type...> value_type;
   value_type operator() (PyObject* pyo)
   {
     assert(pyo);
@@ -403,8 +403,8 @@ struct CppBuilder<std::tuple<Args...>>
     {
       if (PyTuple_Size(pyo) == sizeof...(Args))
       {
-        std::tuple<Args...> tuple { std::make_tuple(Args()...) };
-        _feedCppTuple<std::tuple<Args...>, 0, Args...>(tuple, pyo);
+        value_type tuple { std::make_tuple(typename ToBuildable<Args>::value_type()...) };
+        _feedCppTuple<value_type, 0, Args...>(tuple, pyo);
         return tuple;
       }
       else

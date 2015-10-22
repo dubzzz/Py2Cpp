@@ -627,6 +627,44 @@ namespace
             , make_mapping("length", &Path::length)) {}
     };
   };
+  class NoMove
+  {
+    int id;
+  public:
+    NoMove() : id() {};
+    explicit NoMove(int id) : id(id) {}
+    NoMove(NoMove const&) = delete;
+    NoMove(NoMove&&) = default;
+    NoMove& operator=(NoMove const&) = delete;
+    NoMove& operator=(NoMove&&) = default;
+    
+    bool operator==(NoMove const& other) { return id == other.id; }
+    bool operator<(NoMove const& other) { return id < other.id; }
+    
+    struct FromPy : CppBuilder<FromTuple<NoMove, int>>
+    {
+      FromPy() : CppBuilder<FromTuple<NoMove, int>>(&NoMove::id) {}
+    };
+  };
+  class NoMoveOfNoMove
+  {
+    NoMove nmove;
+  public:
+    NoMoveOfNoMove() = default;
+    explicit NoMoveOfNoMove(int id) : nmove(id) {}
+    NoMoveOfNoMove(NoMoveOfNoMove const&) = delete;
+    NoMoveOfNoMove(NoMoveOfNoMove&&) = default;
+    NoMoveOfNoMove& operator=(NoMoveOfNoMove const&) = delete;
+    NoMoveOfNoMove& operator=(NoMoveOfNoMove&&) = default;
+
+    bool operator==(NoMoveOfNoMove const& other) { return nmove == other.nmove; }
+    
+    struct FromPy : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>
+    {
+      FromPy() : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>(
+            make_mapping("nmove", &NoMoveOfNoMove::nmove)) {}
+    };
+  };
 }
 
 TEST(CppBuilder_struct, FromTuple)
@@ -770,6 +808,52 @@ TEST(CppBuilder_struct, StructOfComplexStructs)
 
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(path, Path::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+/** ALWAYS use move semantics when available              **/
+/** some containers do not support .emplace with g++ <4.8 **/
+/** following code will not compile if it not the case    **/
+
+TEST(CppBuilder_move, ItSelf)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, py_dict, NULL) };
+  NoMove expected { 1 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_TRUE(expected == NoMove::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InTuple)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("((5,),)", Py_eval_input, py_dict, NULL) };
+  NoMove expected { 5 };
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::tuple<NoMove::FromPy>>()(pyo.get());
+  EXPECT_TRUE(expected == std::get<0>(ret));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InVector)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[(1,),(3,),(2,)]", Py_eval_input, py_dict, NULL) };
+  NoMove expected1 { 1 };
+  NoMove expected2 { 3 };
+  NoMove expected3 { 2 };
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::vector<NoMove::FromPy>>()(pyo.get());
+  EXPECT_TRUE(expected1 == ret[0]);
+  EXPECT_TRUE(expected2 == ret[1]);
+  EXPECT_TRUE(expected3 == ret[2]);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InOtherObject)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, py_dict, NULL) };
+  NoMoveOfNoMove expected { 2 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_TRUE(expected == NoMoveOfNoMove::FromPy()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
