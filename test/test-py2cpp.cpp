@@ -656,6 +656,7 @@ namespace
     NoMoveOfNoMove(NoMoveOfNoMove&&) = default;
     NoMoveOfNoMove& operator=(NoMoveOfNoMove const&) = delete;
     NoMoveOfNoMove& operator=(NoMoveOfNoMove&&) = default;
+    void setNoMove(NoMove&& obj) { nmove = std::move(obj); }
 
     bool operator==(NoMoveOfNoMove const& other) { return nmove == other.nmove; }
     
@@ -663,6 +664,11 @@ namespace
     {
       FromPy() : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>(
             make_mapping("nmove", &NoMoveOfNoMove::nmove)) {}
+    };
+    struct FromPyMethod : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>
+    {
+      FromPyMethod() : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>(
+            make_mapping("nmove", &NoMoveOfNoMove::setNoMove)) {}
     };
   };
 }
@@ -854,6 +860,15 @@ TEST(CppBuilder_move, InOtherObject)
   NoMoveOfNoMove expected { 2 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_TRUE(expected == NoMoveOfNoMove::FromPy()(pyo.get()));
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InOtherObject_MethodWithMove)
+{
+  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'nmove': (5,)}", Py_eval_input, py_dict, NULL) };
+  NoMoveOfNoMove expected { 5 };
+  ASSERT_NE(nullptr, pyo.get());
+  EXPECT_TRUE(expected == NoMoveOfNoMove::FromPyMethod()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
