@@ -45,6 +45,10 @@ struct decref
 template <class OBJ, class... Args> struct FromTuple {};
 template <class OBJ, class... Args> struct FromDict {};
 
+// CppBuilder<T> implements the following methods:
+// * bool operator() (PyObject*): build the C++ object <T> corresponding to PyObject*
+// * bool eligible(PyObject*)   : true if the PyObject is eligible to build the object type
+//                                equivalent to CppBuilder does not throw std::invalid_argument for that PyObject
 template <class T> struct CppBuilder;
 
 /**
@@ -61,10 +65,14 @@ template <>
 struct CppBuilder<PyObject*>
 {
   typedef PyObject* value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     return pyo;
+  }
+  bool eligible(PyObject* pyo) const
+  {
+    return true;
   }
 };
 template <> struct ToBuildable<PyObject*> : CppBuilder<PyObject*> {};
@@ -77,7 +85,7 @@ template <>
 struct CppBuilder<bool>
 {
   typedef bool value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyBool_Check(pyo))
@@ -86,6 +94,10 @@ struct CppBuilder<bool>
     }
     throw std::invalid_argument("Not a PyBool instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyBool_Check(pyo);
+  }
 };
 template <> struct ToBuildable<bool> : CppBuilder<bool> {};
 
@@ -93,7 +105,7 @@ template <>
 struct CppBuilder<int>
 {
   typedef int value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -116,6 +128,10 @@ struct CppBuilder<int>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<int> : CppBuilder<int> {};
 
@@ -123,7 +139,7 @@ template <>
 struct CppBuilder<unsigned int>
 {
   typedef unsigned int value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -151,6 +167,10 @@ struct CppBuilder<unsigned int>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<unsigned int> : CppBuilder<unsigned int> {};
 
@@ -158,7 +178,7 @@ template <>
 struct CppBuilder<long>
 {
   typedef long value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -177,6 +197,10 @@ struct CppBuilder<long>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<long> : CppBuilder<long> {};
 
@@ -184,7 +208,7 @@ template <>
 struct CppBuilder<unsigned long>
 {
   typedef unsigned long value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -208,6 +232,10 @@ struct CppBuilder<unsigned long>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<unsigned long> : CppBuilder<unsigned long> {};
 
@@ -215,7 +243,7 @@ template <>
 struct CppBuilder<long long>
 {
   typedef long long value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -234,6 +262,10 @@ struct CppBuilder<long long>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<long long> : CppBuilder<long long> {};
 
@@ -241,7 +273,7 @@ template <>
 struct CppBuilder<unsigned long long>
 {
   typedef unsigned long long value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyLong_Check(pyo))
@@ -266,6 +298,10 @@ struct CppBuilder<unsigned long long>
     }
     throw std::invalid_argument("Not a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<unsigned long long> : CppBuilder<unsigned long long> {};
 
@@ -273,7 +309,7 @@ template <>
 struct CppBuilder<double>
 {
   typedef double value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyFloat_Check(pyo))
@@ -302,6 +338,10 @@ struct CppBuilder<double>
     }
     throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyFloat_Check(pyo) || PyLong_Check(pyo) || PyInt_Check(pyo);
+  }
 };
 template <> struct ToBuildable<double> : CppBuilder<double> {};
 
@@ -313,7 +353,7 @@ template <>
 struct CppBuilder<std::string>
 {
   typedef std::string value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyString_Check(pyo))
@@ -339,6 +379,10 @@ struct CppBuilder<std::string>
     }
     throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyString_Check(pyo) || PyUnicode_Check(pyo);
+  }
 };
 template <> struct ToBuildable<std::string> : CppBuilder<std::string> {};
 
@@ -346,7 +390,7 @@ template <>
 struct CppBuilder<std::wstring>
 {
   typedef std::wstring value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyString_Check(pyo))
@@ -374,6 +418,10 @@ struct CppBuilder<std::wstring>
     }
     throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyString_Check(pyo) || PyUnicode_Check(pyo);
+  }
 };
 template <> struct ToBuildable<std::wstring> : CppBuilder<std::wstring> {};
 
@@ -396,7 +444,7 @@ template <class... Args>
 struct CppBuilder<std::tuple<Args...>>
 {
   typedef std::tuple<typename ToBuildable<Args>::value_type...> value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyTuple_Check(pyo))
@@ -418,6 +466,10 @@ struct CppBuilder<std::tuple<Args...>>
     }
     throw std::invalid_argument("Not a PyTuple instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyTuple_Check(pyo);
+  }
 };
 template <class... Args> struct ToBuildable<std::tuple<Args...>> : CppBuilder<std::tuple<Args...>> {};
 
@@ -429,7 +481,7 @@ template <class T>
 struct CppBuilder<std::vector<T>>
 {
   typedef std::vector<typename ToBuildable<T>::value_type> value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyList_Check(pyo))
@@ -444,6 +496,10 @@ struct CppBuilder<std::vector<T>>
     }
     throw std::invalid_argument("Not a PyList instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyList_Check(pyo);
+  }
 };
 template <class T> struct ToBuildable<std::vector<T>> : CppBuilder<std::vector<T>> {};
 
@@ -455,7 +511,7 @@ template <class T>
 struct CppBuilder<std::set<T>>
 {
   typedef std::set<typename ToBuildable<T>::value_type> value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PySet_Check(pyo))
@@ -478,6 +534,10 @@ struct CppBuilder<std::set<T>>
     }
     throw std::invalid_argument("Not a PySet instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PySet_Check(pyo);
+  }
 };
 template <class T> struct ToBuildable<std::set<T>> : CppBuilder<std::set<T>> {};
 
@@ -489,7 +549,7 @@ template <class K, class T>
 struct CppBuilder<std::map<K,T>>
 {
   typedef std::map<typename ToBuildable<K>::value_type, typename ToBuildable<T>::value_type> value_type;
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     if (PyDict_Check(pyo))
@@ -504,6 +564,10 @@ struct CppBuilder<std::map<K,T>>
       return dict;
     }
     throw std::invalid_argument("Not a PyDict instance");
+  }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyDict_Check(pyo);
   }
 };
 template <class K, class T> struct ToBuildable<std::map<K,T>> : CppBuilder<std::map<K,T>> {};
@@ -625,7 +689,7 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
       : subBuilder(args...)
   {}
   
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     
@@ -648,6 +712,10 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
     }
     throw std::invalid_argument("Not a PyTuple instance");
   }
+  bool eligible(PyObject* pyo) const
+  {
+    return PyTuple_Check(pyo);
+  }
 };
 
 template <class OBJ, class... Args>
@@ -660,7 +728,7 @@ struct CppBuilder<FromDict<OBJ, Args...>>
       : subBuilder(args...)
   {}
   
-  value_type operator() (PyObject* pyo)
+  value_type operator() (PyObject* pyo) const
   {
     assert(pyo);
     
@@ -674,6 +742,10 @@ struct CppBuilder<FromDict<OBJ, Args...>>
       subBuilder.fromObject(obj, pyo);
     }
     return obj;
+  }
+  bool eligible(PyObject* pyo) const
+  {
+    return true;
   }
 };
 
