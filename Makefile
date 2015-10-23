@@ -12,23 +12,27 @@ all: build examples
 
 # *.o files compilation
 
-mkdir_test:
+build/test/test-py2cpp.o: test/test-py2cpp.cpp
 	mkdir -p build/test
-
-build/test/test-py2cpp.o: mkdir_test test/test-py2cpp.cpp
 	$(CC) -o build/test/test-py2cpp.o -c test/test-py2cpp.cpp $(CFLAGS) $(CGTEST)
 
-build/test/helper.o: mkdir_test test/helper.hpp test/helper.cpp
+build/test/helper.o: test/helper.hpp test/helper.cpp
+	mkdir -p build/test
 	$(CC) -o build/test/helper.o -c test/helper.cpp $(CFLAGS) $(CGTEST)
 
-build/test/test-py2cpp-builder.o: mkdir_test test/test-py2cpp-builder.cpp src/py2cpp.hpp
+build/test/test-py2cpp-builder.o: test/test-py2cpp-builder.cpp src/py2cpp.hpp
+	mkdir -p build/test
 	$(CC) -o build/test/test-py2cpp-builder.o -c test/test-py2cpp-builder.cpp $(CFLAGS) $(CGTEST)
+
+build/test/test-py2cpp-eligible.o: test/test-py2cpp-eligible.cpp src/py2cpp.hpp
+	mkdir -p build/test
+	$(CC) -o build/test/test-py2cpp-eligible.o -c test/test-py2cpp-eligible.cpp $(CFLAGS) $(CGTEST)
 
 # Binaries
 
-build/py2cpp.out: build/test/test-py2cpp.o build/test/test-py2cpp-builder.o build/test/helper.o
+build/py2cpp.out: build/test/test-py2cpp.o build/test/test-py2cpp-builder.o build/test/test-py2cpp-eligible.o build/test/helper.o
 	mkdir -p build
-	$(CC) -o build/py2cpp.out build/test/test-py2cpp.o build/test/test-py2cpp-builder.o build/test/helper.o $(LDFLAGS) $(LDGTEST)
+	$(CC) -o build/py2cpp.out build/test/test-py2cpp.o build/test/test-py2cpp-builder.o build/test/test-py2cpp-eligible.o build/test/helper.o $(LDFLAGS) $(LDGTEST)
 
 # Allowed commands
 
