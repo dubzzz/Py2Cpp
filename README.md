@@ -1,4 +1,4 @@
-# Py2Cpp [![Build Status](https://travis-ci.org/dubzzz/Py2Cpp.svg?branch=master)](https://travis-ci.org/dubzzz/Py2Cpp)
+# Py2Cpp [![Build Status](https://travis-ci.org/dubzzz/Py2Cpp.svg?branch=master)](https://travis-ci.org/dubzzz/Py2Cpp)[![Coverage Status](https://coveralls.io/repos/dubzzz/Py2Cpp/badge.svg?branch=master&service=github)](https://coveralls.io/github/dubzzz/Py2Cpp?branch=master)
 
 ## Metaprogramming serving Py->C++ and C++->Py
 
