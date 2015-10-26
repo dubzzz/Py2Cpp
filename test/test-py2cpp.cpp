@@ -11,18 +11,38 @@
 
 using namespace dubzzz::Py2Cpp;
 
+namespace
+{
+  /**
+   * Class responsible to check whether or not
+   * PyObject's ref count was impacted by the run
+   */
+  struct unique_ptr_ctn : std::unique_ptr<PyObject, decref>
+  {
+    Py_ssize_t initial;
+    explicit unique_ptr_ctn(PyObject* pyo) : std::unique_ptr<PyObject, decref>(pyo)
+    {
+      initial = Py_REFCNT(get());
+    }
+    ~unique_ptr_ctn()
+    {
+      EXPECT_EQ(initial, Py_REFCNT(get()));
+    }
+  };
+}
+
 /** bool **/
 
 TEST(CppBuilder_bool, True)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("True", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("True", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(true, CppBuilder<bool>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 TEST(CppBuilder_bool, False)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("False", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("False", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(true, !CppBuilder<bool>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -32,7 +52,7 @@ TEST(CppBuilder_bool, False)
 
 TEST(CppBuilder_int, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -40,7 +60,7 @@ TEST(CppBuilder_int, Zero)
 
 TEST(CppBuilder_int, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -49,7 +69,7 @@ TEST(CppBuilder_int, Any)
 TEST(CppBuilder_int, MinValue)
 {
   std::ostringstream out; out << INT_MIN;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(INT_MIN, CppBuilder<int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -58,7 +78,7 @@ TEST(CppBuilder_int, MinValue)
 TEST(CppBuilder_int, MaxValue)
 {
   std::ostringstream out; out << INT_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(INT_MAX, CppBuilder<int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -67,7 +87,7 @@ TEST(CppBuilder_int, MaxValue)
 TEST(CppBuilder_int, LessThanMinValue)
 {
   std::ostringstream out; out << INT_MIN << "-1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<int>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -76,7 +96,7 @@ TEST(CppBuilder_int, LessThanMinValue)
 TEST(CppBuilder_int, MoreThanMaxValue)
 {
   std::ostringstream out; out << INT_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<int>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -86,7 +106,7 @@ TEST(CppBuilder_int, MoreThanMaxValue)
 
 TEST(CppBuilder_uint, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<unsigned int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -94,7 +114,7 @@ TEST(CppBuilder_uint, Zero)
 
 TEST(CppBuilder_uint, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<unsigned int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -103,7 +123,7 @@ TEST(CppBuilder_uint, Any)
 TEST(CppBuilder_uint, MaxValue)
 {
   std::ostringstream out; out << UINT_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(UINT_MAX, CppBuilder<unsigned int>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -111,7 +131,7 @@ TEST(CppBuilder_uint, MaxValue)
 
 TEST(CppBuilder_uint, LessThanZero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned int>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -120,7 +140,7 @@ TEST(CppBuilder_uint, LessThanZero)
 TEST(CppBuilder_uint, MoreThanMaxValue)
 {
   std::ostringstream out; out << UINT_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned int>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -130,7 +150,7 @@ TEST(CppBuilder_uint, MoreThanMaxValue)
 
 TEST(CppBuilder_long, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -138,7 +158,7 @@ TEST(CppBuilder_long, Zero)
 
 TEST(CppBuilder_long, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -147,7 +167,7 @@ TEST(CppBuilder_long, Any)
 TEST(CppBuilder_long, MinValue)
 {
   std::ostringstream out; out << LONG_MIN;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(LONG_MIN, CppBuilder<long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -156,7 +176,7 @@ TEST(CppBuilder_long, MinValue)
 TEST(CppBuilder_long, MaxValue)
 {
   std::ostringstream out; out << LONG_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(LONG_MAX, CppBuilder<long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -165,7 +185,7 @@ TEST(CppBuilder_long, MaxValue)
 TEST(CppBuilder_long, LessThanMinValue)
 {
   std::ostringstream out; out << LONG_MIN << "-1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -174,7 +194,7 @@ TEST(CppBuilder_long, LessThanMinValue)
 TEST(CppBuilder_long, MoreThanMaxValue)
 {
   std::ostringstream out; out << LONG_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -184,7 +204,7 @@ TEST(CppBuilder_long, MoreThanMaxValue)
 
 TEST(CppBuilder_ulong, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<unsigned long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -192,7 +212,7 @@ TEST(CppBuilder_ulong, Zero)
 
 TEST(CppBuilder_ulong, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<unsigned long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -201,7 +221,7 @@ TEST(CppBuilder_ulong, Any)
 TEST(CppBuilder_ulong, MaxValue)
 {
   std::ostringstream out; out << ULONG_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(ULONG_MAX, CppBuilder<unsigned long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -209,7 +229,7 @@ TEST(CppBuilder_ulong, MaxValue)
 
 TEST(CppBuilder_ulong, LessThanZero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -218,7 +238,7 @@ TEST(CppBuilder_ulong, LessThanZero)
 TEST(CppBuilder_ulong, FarLessThanZero)
 {
   std::ostringstream out; out << LONG_MIN << "-1"; // in order to get a PyLong
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -227,7 +247,7 @@ TEST(CppBuilder_ulong, FarLessThanZero)
 TEST(CppBuilder_ulong, MoreThanMaxValue)
 {
   std::ostringstream out; out << ULONG_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -237,7 +257,7 @@ TEST(CppBuilder_ulong, MoreThanMaxValue)
 
 TEST(CppBuilder_llong, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -245,7 +265,7 @@ TEST(CppBuilder_llong, Zero)
 
 TEST(CppBuilder_llong, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -254,7 +274,7 @@ TEST(CppBuilder_llong, Any)
 TEST(CppBuilder_llong, MinValue)
 {
   std::ostringstream out; out << LLONG_MIN;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(LLONG_MIN, CppBuilder<long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -263,7 +283,7 @@ TEST(CppBuilder_llong, MinValue)
 TEST(CppBuilder_llong, MaxValue)
 {
   std::ostringstream out; out << LLONG_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(LLONG_MAX, CppBuilder<long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -272,7 +292,7 @@ TEST(CppBuilder_llong, MaxValue)
 TEST(CppBuilder_llong, LessThanMinValue)
 {
   std::ostringstream out; out << LLONG_MIN << "-1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<long long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -281,7 +301,7 @@ TEST(CppBuilder_llong, LessThanMinValue)
 TEST(CppBuilder_llong, MoreThanMaxValue)
 {
   std::ostringstream out; out << LLONG_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<long long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -291,7 +311,7 @@ TEST(CppBuilder_llong, MoreThanMaxValue)
 
 TEST(CppBuilder_ullong, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(0, CppBuilder<unsigned long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -299,7 +319,7 @@ TEST(CppBuilder_ullong, Zero)
 
 TEST(CppBuilder_ullong, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("5", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(5, CppBuilder<unsigned long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -308,7 +328,7 @@ TEST(CppBuilder_ullong, Any)
 TEST(CppBuilder_ullong, MaxValue)
 {
   std::ostringstream out; out << ULLONG_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(ULLONG_MAX, CppBuilder<unsigned long long>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -316,7 +336,7 @@ TEST(CppBuilder_ullong, MaxValue)
 
 TEST(CppBuilder_ullong, LessThanZero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("-1", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -325,7 +345,7 @@ TEST(CppBuilder_ullong, LessThanZero)
 TEST(CppBuilder_ullong, FarLessThanZero)
 {
   std::ostringstream out; out << LONG_MIN << "-1"; // in order to get a PyLong
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -334,7 +354,7 @@ TEST(CppBuilder_ullong, FarLessThanZero)
 TEST(CppBuilder_ullong, MoreThanMaxValue)
 {
   std::ostringstream out; out << ULLONG_MAX << "+1";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<unsigned long long>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -344,7 +364,7 @@ TEST(CppBuilder_ullong, MoreThanMaxValue)
 
 TEST(CppBuilder_double, Zero)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("0", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_NEAR(0, CppBuilder<double>()(pyo.get()), DBL_MIN); // PyFloat_GetMin() == DBL_MIN
   EXPECT_FALSE(uncaught_exception());
@@ -352,7 +372,7 @@ TEST(CppBuilder_double, Zero)
 
 TEST(CppBuilder_double, Any)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("3.14", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("3.14", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_NEAR(3.14, CppBuilder<double>()(pyo.get()), 2*DBL_EPSILON);
   EXPECT_FALSE(uncaught_exception());
@@ -361,7 +381,7 @@ TEST(CppBuilder_double, Any)
 TEST(CppBuilder_double, MinValue)
 {
   std::ostringstream out; out << DBL_MIN;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_NEAR(PyFloat_GetMin(), CppBuilder<double>()(pyo.get()), DBL_MIN);
   EXPECT_FALSE(uncaught_exception());
@@ -370,7 +390,7 @@ TEST(CppBuilder_double, MinValue)
 TEST(CppBuilder_double, MaxValue)
 {
   std::ostringstream out; out << DBL_MAX;
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   const double tolerancy { pow(2, DBL_MAX_EXP) };
   EXPECT_NEAR(PyFloat_GetMax(), CppBuilder<double>()(pyo.get()), tolerancy);
@@ -380,7 +400,7 @@ TEST(CppBuilder_double, MaxValue)
 TEST(CppBuilder_double, MoreThanMaxValue)
 {
   std::ostringstream out; out << DBL_MAX << "*2";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<double>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -389,7 +409,7 @@ TEST(CppBuilder_double, MoreThanMaxValue)
 TEST(CppBuilder_double, MoreThanMaxValueNegative)
 {
   std::ostringstream out; out << DBL_MAX << "*(-2)";
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(out.str().c_str(), Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<double>()(pyo.get()), std::overflow_error);
   EXPECT_FALSE(uncaught_exception());
@@ -399,7 +419,7 @@ TEST(CppBuilder_double, MoreThanMaxValueNegative)
 
 TEST(CppBuilder_string, String)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("'hello'", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -407,7 +427,7 @@ TEST(CppBuilder_string, String)
 
 TEST(CppBuilder_string, Unicode)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("u'hello'", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ("hello", CppBuilder<std::string>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -415,7 +435,7 @@ TEST(CppBuilder_string, Unicode)
 
 TEST(CppBuilder_string, UnicodeExotic)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(
+  unique_ptr_ctn pyo { PyRun_String(
       "u'\u15c7\u25d8\u0034\u2b15'", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ("\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::string>()(pyo.get()));
@@ -426,7 +446,7 @@ TEST(CppBuilder_string, UnicodeExotic)
 
 TEST(CppBuilder_wstring, String)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("'hello'", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("'hello'", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -434,7 +454,7 @@ TEST(CppBuilder_wstring, String)
 
 TEST(CppBuilder_wstring, Unicode)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("u'hello'", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("u'hello'", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"hello", CppBuilder<std::wstring>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
@@ -442,7 +462,7 @@ TEST(CppBuilder_wstring, Unicode)
 
 TEST(CppBuilder_wstring, UnicodeExotic)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(
+  unique_ptr_ctn pyo { PyRun_String(
       "u'\u15c7\u25d8\u0034\u2b15'", Py_eval_input, get_py_dict(), NULL) }; //utf-16
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(L"\xe1\x97\x87\xe2\x97\x98\x34\xe2\xac\x95", CppBuilder<std::wstring>()(pyo.get()));
@@ -453,7 +473,7 @@ TEST(CppBuilder_wstring, UnicodeExotic)
 
 TEST(CppBuilder_tuple, FromTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 'toto')", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1, 'toto')", Py_eval_input, get_py_dict(), NULL) };
   std::tuple<int, std::string> expected { 1, "toto" };
   ASSERT_NE(nullptr, pyo.get());
 
@@ -464,7 +484,7 @@ TEST(CppBuilder_tuple, FromTuple)
 
 TEST(CppBuilder_tuple, FromTooSmallTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
 
   auto Functor =  CppBuilder<std::tuple<int, std::string>>();
@@ -474,7 +494,7 @@ TEST(CppBuilder_tuple, FromTooSmallTuple)
 
 TEST(CppBuilder_tuple, FromTooLargeTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 'toto', 2)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1, 'toto', 2)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
 
   auto Functor =  CppBuilder<std::tuple<int, std::string>>();
@@ -486,7 +506,7 @@ TEST(CppBuilder_tuple, FromTooLargeTuple)
 
 TEST(CppBuilder_vector, FromList)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[1,8,3]", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("[1,8,3]", Py_eval_input, get_py_dict(), NULL) };
   std::vector<int> expected { 1, 8, 3 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, CppBuilder<std::vector<int>>()(pyo.get()));
@@ -495,7 +515,7 @@ TEST(CppBuilder_vector, FromList)
 
 TEST(CppBuilder_vector, FromInvalidList)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[1,'string',3]", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("[1,'string',3]", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(CppBuilder<std::vector<int>>()(pyo.get()), std::invalid_argument);
   EXPECT_FALSE(uncaught_exception());
@@ -505,7 +525,7 @@ TEST(CppBuilder_vector, FromInvalidList)
 
 TEST(CppBuilder_set, FromSet)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
   std::set<int> expected { 1, 8, 3 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
@@ -514,13 +534,13 @@ TEST(CppBuilder_set, FromSet)
 TEST(CppBuilder_set, InputUnmodified)
 {
   PyRun_SimpleString("CppBuilder_set_InputUnmodified = set([1,8,3])");
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("CppBuilder_set_InputUnmodified", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("CppBuilder_set_InputUnmodified", Py_eval_input, get_py_dict(), NULL) };
   std::set<int> expected { 1, 8, 3 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
   
-  std::unique_ptr<PyObject, decref> pyo_check { PyRun_String("CppBuilder_set_InputUnmodified == set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo_check { PyRun_String("CppBuilder_set_InputUnmodified == set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
   EXPECT_TRUE(CppBuilder<bool>()(pyo_check.get()));
   EXPECT_FALSE(uncaught_exception());
 }
@@ -529,7 +549,7 @@ TEST(CppBuilder_set, InputUnmodified)
 
 TEST(CppBuilder_map, FromDict)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'x': 1, 'y': 3}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'x': 1, 'y': 3}", Py_eval_input, get_py_dict(), NULL) };
   std::map<std::string, int> expected { {"x", 1}, {"y", 3} };
   ASSERT_NE(nullptr, pyo.get());
 
@@ -664,7 +684,7 @@ namespace
 
 TEST(CppBuilder_struct, FromTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPy()(pyo.get()));
@@ -673,7 +693,7 @@ TEST(CppBuilder_struct, FromTuple)
 
 TEST(CppBuilder_struct, FromTooSmallTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
   EXPECT_FALSE(uncaught_exception());
@@ -681,7 +701,7 @@ TEST(CppBuilder_struct, FromTooSmallTuple)
 
 TEST(CppBuilder_struct, FromTooLargeTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 2, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1, 2, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
   EXPECT_FALSE(uncaught_exception());
@@ -689,7 +709,7 @@ TEST(CppBuilder_struct, FromTooLargeTuple)
 
 TEST(CppBuilder_struct, FromTupleArgs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPyArgs()(pyo.get()));
@@ -698,7 +718,7 @@ TEST(CppBuilder_struct, FromTupleArgs)
 
 TEST(CppBuilder_struct, FromDict)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPyDict()(pyo.get()));
@@ -707,7 +727,7 @@ TEST(CppBuilder_struct, FromDict)
 
 TEST(CppBuilder_struct, FromDictArgs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
   Point expected { 1, 3, 4 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
@@ -717,7 +737,7 @@ TEST(CppBuilder_struct, FromDictArgs)
 TEST(CppBuilder_struct, FromObject)
 {
   PyRun_SimpleString("class Point:\n   x = 5\n   z = 14");
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("Point", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("Point", Py_eval_input, get_py_dict(), NULL) };
   Point expected { 5, 0, 14 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
@@ -726,7 +746,7 @@ TEST(CppBuilder_struct, FromObject)
 
 TEST(CppBuilder_struct, VectorOfStructs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[(1, 3, 4), (1, 5, 5), (0, -1, 0)]", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("[(1, 3, 4), (1, 5, 5), (0, -1, 0)]", Py_eval_input, get_py_dict(), NULL) };
   Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
   
   ASSERT_NE(nullptr, pyo.get());
@@ -740,7 +760,7 @@ TEST(CppBuilder_struct, VectorOfStructs)
 
 TEST(CppBuilder_struct, SetOfStructs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("set([(1, 3, 4), (1, 5, 5), (0, -1, 0)])", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("set([(1, 3, 4), (1, 5, 5), (0, -1, 0)])", Py_eval_input, get_py_dict(), NULL) };
   Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
   
   ASSERT_NE(nullptr, pyo.get());
@@ -754,7 +774,7 @@ TEST(CppBuilder_struct, SetOfStructs)
 
 TEST(CppBuilder_struct, MapOfIntStructs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'x': (1, 0, 4), 'y': (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'x': (1, 0, 4), 'y': (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
   Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
   
   ASSERT_NE(nullptr, pyo.get());
@@ -769,7 +789,7 @@ TEST(CppBuilder_struct, MapOfIntStructs)
 
 TEST(CppBuilder_struct, MapOfKeysStructAndValuesStruct)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{(0, 0, 0): (1, 0, 4), (1, 1, 2): (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{(0, 0, 0): (1, 0, 4), (1, 1, 2): (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
   Point keys[] = { { 0, 0, 0 }, { 1, 1, 2 } };
   Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
   
@@ -785,7 +805,7 @@ TEST(CppBuilder_struct, MapOfKeysStructAndValuesStruct)
 
 TEST(CppBuilder_struct, StructOfStructs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'oriented': True, 'pt1': (0, 0, 0), 'pt2': (1, 0, 4)}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'oriented': True, 'pt1': (0, 0, 0), 'pt2': (1, 0, 4)}", Py_eval_input, get_py_dict(), NULL) };
   Point pt1 { 0, 0, 0 };
   Point pt2 { 1, 0, 4 };
   Line line { pt1, pt2, true };
@@ -797,7 +817,7 @@ TEST(CppBuilder_struct, StructOfStructs)
 
 TEST(CppBuilder_struct, StructOfComplexStructs)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'length': 56, 'path': [(0, 0, 0), (1, 0, 4), (1, 1, 2), (0, 5, 9)]}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'length': 56, 'path': [(0, 0, 0), (1, 0, 4), (1, 1, 2), (0, 5, 9)]}", Py_eval_input, get_py_dict(), NULL) };
   std::vector<Point> pts = { { 0, 0, 0 }, { 1, 0, 4 }, { 1, 1, 2 }, { 0, 5, 9 } };
   Path path { pts, 56 };
 
@@ -812,7 +832,7 @@ TEST(CppBuilder_struct, StructOfComplexStructs)
 
 TEST(CppBuilder_move, ItSelf)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
   NoMove expected { 1 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_TRUE(expected == NoMove::FromPy()(pyo.get()));
@@ -821,7 +841,7 @@ TEST(CppBuilder_move, ItSelf)
 
 TEST(CppBuilder_move, InTuple)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("((5,),)", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("((5,),)", Py_eval_input, get_py_dict(), NULL) };
   NoMove expected { 5 };
   ASSERT_NE(nullptr, pyo.get());
   auto ret = CppBuilder<std::tuple<NoMove::FromPy>>()(pyo.get());
@@ -831,7 +851,7 @@ TEST(CppBuilder_move, InTuple)
 
 TEST(CppBuilder_move, InVector)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("[(1,),(3,),(2,)]", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("[(1,),(3,),(2,)]", Py_eval_input, get_py_dict(), NULL) };
   NoMove expected1 { 1 };
   NoMove expected2 { 3 };
   NoMove expected3 { 2 };
@@ -845,7 +865,7 @@ TEST(CppBuilder_move, InVector)
 
 TEST(CppBuilder_move, InOtherObject)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, get_py_dict(), NULL) };
   NoMoveOfNoMove expected { 2 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_TRUE(expected == NoMoveOfNoMove::FromPy()(pyo.get()));
@@ -854,7 +874,7 @@ TEST(CppBuilder_move, InOtherObject)
 
 TEST(CppBuilder_move, InOtherObject_MethodWithMove)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{'nmove': (5,)}", Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String("{'nmove': (5,)}", Py_eval_input, get_py_dict(), NULL) };
   NoMoveOfNoMove expected { 5 };
   ASSERT_NE(nullptr, pyo.get());
   EXPECT_TRUE(expected == NoMoveOfNoMove::FromPyMethod()(pyo.get()));
@@ -865,7 +885,7 @@ TEST(CppBuilder_move, InOtherObject_MethodWithMove)
 
 TEST(CppBuilder_mix, AnyValue)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String("{ \
+  unique_ptr_ctn pyo { PyRun_String("{ \
         'positions':[ \
         { \
           'x': 5, \
@@ -914,14 +934,14 @@ static void filterThrow(BUILDER const& builder, PyObject* pyo)
 template <class BUILDER>
 static void shouldBeEligible(BUILDER const& builder, std::string const& pyQuery)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
   EXPECT_TRUE(builder.eligible(pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";
   EXPECT_NO_THROW(filterThrow(builder, pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";;
 }
 template <class BUILDER>
 static void shouldNotBeEligible(BUILDER const& builder, std::string const& pyQuery)
 {
-  std::unique_ptr<PyObject, decref> pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
+  unique_ptr_ctn pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
   EXPECT_FALSE(builder.eligible(pyo.get())) << "Conversion should not be possible for: '" << pyQuery << "'";
   EXPECT_THROW(builder(pyo.get()), std::invalid_argument) << "Conversion should not be possible for: '" << pyQuery << "'";
 }
