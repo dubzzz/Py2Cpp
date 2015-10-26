@@ -1109,6 +1109,86 @@ TEST(CppBuilder_eligible, wstring)
   testString<std::wstring>();
 }
 
+TEST(CppBuilder_eligible, tuple)
+{
+  auto builder = CppBuilder<std::tuple<int, int, int>>();
+  
+  shouldBeEligible(builder, "(1,2,3)");
+
+  shouldNotBeEligible(builder, "None");
+  shouldNotBeEligible(builder, "True");
+  shouldNotBeEligible(builder, "1");
+  shouldNotBeEligible(builder, maxLL());
+  shouldNotBeEligible(builder, "1.2");
+  shouldNotBeEligible(builder, "'This is a string'");
+  shouldNotBeEligible(builder, "u'This is a unicode string'");
+  shouldNotBeEligible(builder, "[1,2,3]");
+  shouldNotBeEligible(builder, "(1,2)");
+  shouldNotBeEligible(builder, "(1,'string',3)");
+  shouldNotBeEligible(builder, "set([1,2,3])");
+  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+}
+
+TEST(CppBuilder_eligible, vector)
+{
+  auto builder = CppBuilder<std::vector<int>>();
+  
+  shouldBeEligible(builder, "[]");
+  shouldBeEligible(builder, "[1,2,3]");
+
+  shouldNotBeEligible(builder, "None");
+  shouldNotBeEligible(builder, "True");
+  shouldNotBeEligible(builder, "1");
+  shouldNotBeEligible(builder, maxLL());
+  shouldNotBeEligible(builder, "1.2");
+  shouldNotBeEligible(builder, "'This is a string'");
+  shouldNotBeEligible(builder, "u'This is a unicode string'");
+  shouldNotBeEligible(builder, "(1,2,3)");
+  shouldNotBeEligible(builder, "['string']");
+  shouldNotBeEligible(builder, "set([1,2,3])");
+  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+}
+
+TEST(CppBuilder_eligible, set)
+{
+  auto builder = CppBuilder<std::set<int>>();
+  
+  shouldBeEligible(builder, "set([])");
+  shouldBeEligible(builder, "set([1,2,3])");
+
+  shouldNotBeEligible(builder, "None");
+  shouldNotBeEligible(builder, "True");
+  shouldNotBeEligible(builder, "1");
+  shouldNotBeEligible(builder, maxLL());
+  shouldNotBeEligible(builder, "1.2");
+  shouldNotBeEligible(builder, "'This is a string'");
+  shouldNotBeEligible(builder, "u'This is a unicode string'");
+  shouldNotBeEligible(builder, "(1,2,3)");
+  shouldNotBeEligible(builder, "[1,2,3]");
+  shouldNotBeEligible(builder, "set(['string'])");
+  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+}
+
+TEST(CppBuilder_eligible, map)
+{
+  auto builder = CppBuilder<std::map<std::string, int>>();
+  
+  shouldBeEligible(builder, "{}");
+  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+
+  shouldNotBeEligible(builder, "None");
+  shouldNotBeEligible(builder, "True");
+  shouldNotBeEligible(builder, "1");
+  shouldNotBeEligible(builder, maxLL());
+  shouldNotBeEligible(builder, "1.2");
+  shouldNotBeEligible(builder, "'This is a string'");
+  shouldNotBeEligible(builder, "u'This is a unicode string'");
+  shouldNotBeEligible(builder, "(1,2,3)");
+  shouldNotBeEligible(builder, "[1,2,3]");
+  shouldNotBeEligible(builder, "set([1,2,3])");
+  shouldNotBeEligible(builder, "{0: 1, 1: 2, 2: 3}");
+}
+
 /**
  * Launch all the tests
  */
