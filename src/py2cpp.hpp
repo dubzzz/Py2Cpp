@@ -440,6 +440,19 @@ static inline void _feedCppTuple(TUPLE& tuple, PyObject* root)
   _feedCppTuple<TUPLE, pos +1, Args...>(tuple, root);
 }
 
+template <class TUPLE, std::size_t pos>
+static inline bool _checkEligibleCppTuple(PyObject* root)
+{
+  return true;
+}
+
+template <class TUPLE, std::size_t pos, class T, class... Args>
+static inline bool _checkEligibleCppTuple(PyObject* root)
+{
+  return ToBuildable<T>().eligible(PyTuple_GetItem(root, pos))
+      && _checkEligibleCppTuple<TUPLE, pos +1, Args...>(root);
+}
+
 template <class... Args>
 struct CppBuilder<std::tuple<Args...>>
 {
@@ -461,14 +474,16 @@ struct CppBuilder<std::tuple<Args...>>
         oss << "PyTuple length differs from asked one: "
             << "PyTuple(" << PyTuple_Size(pyo) << ") "
             << "and std::tuple<...>(" << sizeof...(Args) << ")";
-        throw std::length_error(oss.str());
+        throw std::invalid_argument(oss.str());
       }
     }
     throw std::invalid_argument("Not a PyTuple instance");
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyTuple_Check(pyo);
+    return PyTuple_Check(pyo)
+        && PyTuple_Size(pyo) == sizeof...(Args)
+        && _checkEligibleCppTuple<value_type, 0, Args...>(pyo);
   }
 };
 template <class... Args> struct ToBuildable<std::tuple<Args...>> : CppBuilder<std::tuple<Args...>> {};

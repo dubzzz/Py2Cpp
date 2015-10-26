@@ -541,7 +541,7 @@ TEST(CppBuilder_tuple, FromTooSmallTuple)
   ASSERT_NE(nullptr, pyo.get());
 
   auto Functor =  CppBuilder<std::tuple<int, std::string>>();
-  EXPECT_THROW(Functor(pyo.get()), std::length_error);
+  EXPECT_THROW(Functor(pyo.get()), std::invalid_argument);
   EXPECT_FALSE(uncaught_exception());
 }
 
@@ -551,7 +551,7 @@ TEST(CppBuilder_tuple, FromTooLargeTuple)
   ASSERT_NE(nullptr, pyo.get());
 
   auto Functor =  CppBuilder<std::tuple<int, std::string>>();
-  EXPECT_THROW(Functor(pyo.get()), std::length_error);
+  EXPECT_THROW(Functor(pyo.get()), std::invalid_argument);
   EXPECT_FALSE(uncaught_exception());
 }
 
