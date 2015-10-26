@@ -20,13 +20,66 @@ namespace
   struct unique_ptr_ctn : std::unique_ptr<PyObject, decref>
   {
     Py_ssize_t initial;
+    std::vector<Py_ssize_t> subObjectsCtn;
+    
+    std::vector<Py_ssize_t> get_sub_objects_ctn()
+    {
+      PyObject* pyo { get() };
+      std::vector<Py_ssize_t> ctns;
+      
+      if (PyTuple_Check(pyo))
+      {
+        for (Py_ssize_t i { 0 } ; i != PyTuple_Size(pyo) ; ++i)
+        {
+          ctns.push_back(Py_REFCNT(PyTuple_GetItem(pyo, i)));
+        }
+      }
+      else if (PyList_Check(pyo))
+      {
+        for (Py_ssize_t i { 0 } ; i != PyList_Size(pyo) ; ++i)
+        {
+          ctns.push_back(Py_REFCNT(PyList_GetItem(pyo, i)));
+        }
+      }
+      else if (PySet_Check(pyo))
+      {
+        long size { PySet_Size(pyo) };
+        PyObject* backup[size];
+        for (auto& elt : backup)
+        {
+          PyObject* popped { PySet_Pop(pyo) };
+          elt = popped;
+          ctns.push_back(Py_REFCNT(popped));
+        }
+        for (auto& popped : backup)
+        {
+          PySet_Add(pyo, popped);
+          Py_DECREF(popped);
+        }
+      }
+      else if (PyDict_Check(pyo))
+      {
+        PyObject *key, *value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(pyo, &pos, &key, &value))
+        {
+          ctns.push_back(Py_REFCNT(key));
+          ctns.push_back(Py_REFCNT(value));
+        }
+      }
+      return ctns;
+    }
+    
     explicit unique_ptr_ctn(PyObject* pyo) : std::unique_ptr<PyObject, decref>(pyo)
     {
-      initial = Py_REFCNT(get());
+      initial = Py_REFCNT(pyo);
+      subObjectsCtn = get_sub_objects_ctn();
     }
+
     ~unique_ptr_ctn()
     {
       EXPECT_EQ(initial, Py_REFCNT(get()));
+      EXPECT_EQ(subObjectsCtn, get_sub_objects_ctn()) << "The ref count of sub items has changed";
     }
   };
 }
