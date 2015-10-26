@@ -513,7 +513,18 @@ struct CppBuilder<std::vector<T>>
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyList_Check(pyo);
+    if (! PyList_Check(pyo))
+    {
+      return false;
+    }
+    for (Py_ssize_t i { 0 } ; i != PyList_Size(pyo) ; ++i)
+    {
+      if (! ToBuildable<T>().eligible(PyList_GetItem(pyo, i)))
+      {
+        return false;
+      }
+    }
+    return true;
   }
 };
 template <class T> struct ToBuildable<std::vector<T>> : CppBuilder<std::vector<T>> {};
