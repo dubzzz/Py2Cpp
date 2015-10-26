@@ -593,7 +593,20 @@ struct CppBuilder<std::map<K,T>>
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyDict_Check(pyo);
+    if (! PyDict_Check(pyo))
+    {
+      return false;
+    }
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    while (PyDict_Next(pyo, &pos, &key, &value))
+    {
+      if (! ToBuildable<K>().eligible(key) || ! ToBuildable<T>().eligible(value))
+      {
+        return false;
+      }
+    }
+    return true;
   }
 };
 template <class K, class T> struct ToBuildable<std::map<K,T>> : CppBuilder<std::map<K,T>> {};
