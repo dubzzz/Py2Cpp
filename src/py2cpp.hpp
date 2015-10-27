@@ -533,6 +533,58 @@ template <class T> struct ToBuildable<std::vector<T>> : CppBuilder<std::vector<T
  * Set builder
  */
 
+namespace
+{
+  template <class T>
+  struct CppBuilderSetHelper
+  {
+    typedef std::set<typename ToBuildable<T>::value_type> value_type;
+
+    PyObject *pyo;
+    std::vector<PyObject*> backup;
+
+    CppBuilderSetHelper(PyObject* pyo) : pyo(pyo), backup()
+    {}
+
+    value_type build()
+    {
+      value_type s;
+      long size { PySet_Size(pyo) };
+      for (long i { 0 } ; i != size ; ++i)
+      {
+        PyObject* popped { PySet_Pop(pyo) };
+        backup.push_back(popped);
+        s.insert(ToBuildable<T>()(popped));
+      }
+      return s;
+    }
+    
+    bool eligible()
+    {
+      long size { PySet_Size(pyo) };
+      for (long i { 0 } ; i != size ; ++i)
+      {
+        PyObject* popped { PySet_Pop(pyo) };
+        backup.push_back(popped);
+        if (! ToBuildable<T>().eligible(popped))
+        {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    ~CppBuilderSetHelper()
+    {
+      for (auto& popped : backup)
+      {
+         PySet_Add(pyo, popped);
+         Py_DECREF(popped);
+      }
+    }
+  };
+}
+
 template <class T>
 struct CppBuilder<std::set<T>>
 {
@@ -542,27 +594,19 @@ struct CppBuilder<std::set<T>>
     assert(pyo);
     if (PySet_Check(pyo))
     {
-      long size { PySet_Size(pyo) };
-      PyObject* backup[size];
-      value_type s;
-      for (auto& elt : backup)
-      {
-        PyObject* popped { PySet_Pop(pyo) };
-        elt = popped;
-        s.insert(ToBuildable<T>()(popped));
-      }
-      for (auto& popped : backup)
-      {
-        PySet_Add(pyo, popped);
-        Py_DECREF(popped);
-      }
-      return s;
+      CppBuilderSetHelper<T> helper(pyo);
+      return helper.build();
     }
     throw std::invalid_argument("Not a PySet instance");
   }
   bool eligible(PyObject* pyo) const
   {
-    return PySet_Check(pyo);
+    if (! PySet_Check(pyo))
+    {
+      return false;
+    }
+    CppBuilderSetHelper<T> helper(pyo);
+    return helper.eligible();
   }
 };
 template <class T> struct ToBuildable<std::set<T>> : CppBuilder<std::set<T>> {};
