@@ -748,7 +748,7 @@ TEST(CppBuilder_struct, FromTooSmallTuple)
 {
   unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
-  EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
+  EXPECT_THROW(Point::FromPy()(pyo.get()), std::invalid_argument);
   EXPECT_FALSE(uncaught_exception());
 }
 
@@ -756,7 +756,7 @@ TEST(CppBuilder_struct, FromTooLargeTuple)
 {
   unique_ptr_ctn pyo { PyRun_String("(1, 2, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
   ASSERT_NE(nullptr, pyo.get());
-  EXPECT_THROW(Point::FromPy()(pyo.get()), std::length_error);
+  EXPECT_THROW(Point::FromPy()(pyo.get()), std::invalid_argument);
   EXPECT_FALSE(uncaught_exception());
 }
 
@@ -1187,6 +1187,26 @@ TEST(CppBuilder_eligible, map)
   shouldNotBeEligible(builder, "[1,2,3]");
   shouldNotBeEligible(builder, "set([1,2,3])");
   shouldNotBeEligible(builder, "{0: 1, 1: 2, 2: 3}");
+}
+
+TEST(CppBuilder_eligible, object_from_tuple)
+{
+  auto builder = Point::FromPy();
+  
+  shouldBeEligible(builder, "(1,2,3)");
+
+  shouldNotBeEligible(builder, "None");
+  shouldNotBeEligible(builder, "True");
+  shouldNotBeEligible(builder, "1");
+  shouldNotBeEligible(builder, maxLL());
+  shouldNotBeEligible(builder, "1.2");
+  shouldNotBeEligible(builder, "'This is a string'");
+  shouldNotBeEligible(builder, "u'This is a unicode string'");
+  shouldNotBeEligible(builder, "[1,2,3]");
+  shouldNotBeEligible(builder, "(1,2)");
+  shouldNotBeEligible(builder, "(1,'string',3)");
+  shouldNotBeEligible(builder, "set([1,2,3])");
+  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
 }
 
 /**

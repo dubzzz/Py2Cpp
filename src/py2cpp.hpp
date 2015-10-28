@@ -705,6 +705,8 @@ struct CppBuilderHelper<OBJ, pos>
   inline void fromDict(OBJ& obj, PyObject* pyo) const {}
   inline void fromObject(OBJ& obj, PyObject* pyo) const {}
   inline void fromTuple(OBJ& obj, PyObject* pyo) const {}
+
+  inline bool eligibleFromTuple(PyObject* pyo) const { return true; }
 };
 
 template <class OBJ, std::size_t pos, class FUNCTOR, class... Args>
@@ -756,6 +758,10 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
     callback.second(obj, std::move(value));
     subBuilder.fromTuple(obj, pyo);
   }
+  inline bool eligibleFromTuple(PyObject* pyo) const
+  {
+    return FUNCTOR().eligible(PyTuple_GetItem(pyo, pos)) && subBuilder.eligibleFromTuple(pyo);
+  }
 };
 
 template <class OBJ, class... Args>
@@ -790,14 +796,16 @@ struct CppBuilder<FromTuple<OBJ, Args...>>
         oss << "PyTuple length differs from asked one: "
             << "PyTuple(" << PyTuple_Size(pyo) << ") "
             << "and FromTuple<...>(" << sizeof...(Args) << ")";
-        throw std::length_error(oss.str());
+        throw std::invalid_argument(oss.str());
       }
     }
     throw std::invalid_argument("Not a PyTuple instance");
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyTuple_Check(pyo);
+    return PyTuple_Check(pyo)
+        && PyTuple_Size(pyo) == sizeof...(Args)
+        && subBuilder.eligibleFromTuple(pyo);
   }
 };
 
