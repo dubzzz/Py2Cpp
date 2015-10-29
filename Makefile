@@ -3,7 +3,7 @@ ifeq ($(origin GXX), undefined)
 else
 	CC=$(GXX)
 endif
-CFLAGS=-std=c++11 -Wall -Isrc $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g") -fprofile-arcs -ftest-coverage
+CFLAGS=-std=c++11 -Wall -I. $(shell python-config --cflags | sed -e "s/-Wstrict-prototypes//g") -fprofile-arcs -ftest-coverage
 LDFLAGS=$(shell python-config --ldflags) -fprofile-arcs
 CGTEST=-I/usr/local/include
 LDGTEST=-L/usr/local/lib -lgtest
@@ -12,15 +12,19 @@ all: build examples
 
 # *.o files compilation
 
-build/test/test-py2cpp.o: test/test-py2cpp.cpp src/py2cpp.hpp
+build/test/test-py2cpp.o: test/test-py2cpp.cpp src/py2cpp.hpp test/helper.hpp
 	mkdir -p build/test
 	$(CC) -o build/test/test-py2cpp.o -c test/test-py2cpp.cpp $(CFLAGS) $(CGTEST)
 
+build/test/helper.o: test/helper.hpp test/helper.cpp
+	mkdir -p build/test
+	$(CC) -o build/test/helper.o -c test/helper.cpp $(CFLAGS) $(CGTEST)
+
 # Binaries
 
-build/py2cpp.out: build/test/test-py2cpp.o
+build/py2cpp.out: build/test/test-py2cpp.o build/test/helper.o
 	mkdir -p build
-	$(CC) -o build/py2cpp.out build/test/test-py2cpp.o $(LDFLAGS) $(LDGTEST)
+	$(CC) -o build/py2cpp.out build/test/test-py2cpp.o build/test/helper.o $(LDFLAGS) $(LDGTEST)
 
 # Allowed commands
 
