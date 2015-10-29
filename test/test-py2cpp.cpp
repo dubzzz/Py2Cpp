@@ -1224,6 +1224,17 @@ TEST(CppBuilder_eligible, object_from_dict)
 TEST(CppBuilder_eligible, object_from_instance)
 {
   auto builder = Point::FromPyDict();
+  PyRun_SimpleString("class Point:\n    def __init__(self, x_, y_):\n        self.x = x_\n        self.y = y_");
+  PyRun_SimpleString("class SuperPoint:\n    def __init__(self, x_, y_, z_, t_):\n        self.x = x_\n        self.y = y_\n        self.z = z_\n        self.t = t_");
+
+  shouldBeEligible(builder, "Point(1,2)");
+  shouldBeEligible(builder, "SuperPoint(1,2,3,4)");
+  shouldBeEligible(builder, "SuperPoint(1,2,3,'4')");
+  
+  shouldNotBeEligible(builder, "Point('1','2')");
+  shouldNotBeEligible(builder, "Point(1,'2')");
+  shouldNotBeEligible(builder, "Point('1',2)");
+  shouldNotBeEligible(builder, "SuperPoint(1,2,'3',4)");
 }
 
 /**
