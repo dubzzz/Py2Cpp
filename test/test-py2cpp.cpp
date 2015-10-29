@@ -689,48 +689,48 @@ namespace
             , make_mapping("length", &Path::length)) {}
     };
   };
-  class NoMove
+  class OnlyMove
   {
     int id;
   public:
-    NoMove() : id() {};
-    explicit NoMove(int id) : id(id) {}
-    NoMove(NoMove const&) = delete;
-    NoMove(NoMove&&) = default;
-    NoMove& operator=(NoMove const&) = delete;
-    NoMove& operator=(NoMove&&) = default;
+    OnlyMove() : id() {};
+    explicit OnlyMove(int id) : id(id) {}
+    OnlyMove(OnlyMove const&) = delete;
+    OnlyMove(OnlyMove&&) = default;
+    OnlyMove& operator=(OnlyMove const&) = delete;
+    OnlyMove& operator=(OnlyMove&&) = default;
     
-    bool operator==(NoMove const& other) const { return id == other.id; }
-    bool operator<(NoMove const& other) const { return id < other.id; }
+    bool operator==(OnlyMove const& other) const { return id == other.id; }
+    bool operator<(OnlyMove const& other) const { return id < other.id; }
     
-    struct FromPy : CppBuilder<FromTuple<NoMove, int>>
+    struct FromPy : CppBuilder<FromTuple<OnlyMove, int>>
     {
-      FromPy() : CppBuilder<FromTuple<NoMove, int>>(&NoMove::id) {}
+      FromPy() : CppBuilder<FromTuple<OnlyMove, int>>(&OnlyMove::id) {}
     };
   };
-  class NoMoveOfNoMove
+  class OnlyMoveOfOnlyMove
   {
-    NoMove nmove;
+    OnlyMove nmove;
   public:
-    NoMoveOfNoMove() = default;
-    explicit NoMoveOfNoMove(int id) : nmove(id) {}
-    NoMoveOfNoMove(NoMoveOfNoMove const&) = delete;
-    NoMoveOfNoMove(NoMoveOfNoMove&&) = default;
-    NoMoveOfNoMove& operator=(NoMoveOfNoMove const&) = delete;
-    NoMoveOfNoMove& operator=(NoMoveOfNoMove&&) = default;
-    void setNoMove(NoMove&& obj) { nmove = std::move(obj); }
+    OnlyMoveOfOnlyMove() = default;
+    explicit OnlyMoveOfOnlyMove(int id) : nmove(id) {}
+    OnlyMoveOfOnlyMove(OnlyMoveOfOnlyMove const&) = delete;
+    OnlyMoveOfOnlyMove(OnlyMoveOfOnlyMove&&) = default;
+    OnlyMoveOfOnlyMove& operator=(OnlyMoveOfOnlyMove const&) = delete;
+    OnlyMoveOfOnlyMove& operator=(OnlyMoveOfOnlyMove&&) = default;
+    void setOnlyMove(OnlyMove&& obj) { nmove = std::move(obj); }
 
-    bool operator==(NoMoveOfNoMove const& other) const { return nmove == other.nmove; }
+    bool operator==(OnlyMoveOfOnlyMove const& other) const { return nmove == other.nmove; }
     
-    struct FromPy : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>
+    struct FromPy : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>
     {
-      FromPy() : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>(
-            make_mapping("nmove", &NoMoveOfNoMove::nmove)) {}
+      FromPy() : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>(
+            make_mapping("nmove", &OnlyMoveOfOnlyMove::nmove)) {}
     };
-    struct FromPyMethod : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>
+    struct FromPyMethod : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>
     {
-      FromPyMethod() : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>(
-            make_mapping("nmove", &NoMoveOfNoMove::setNoMove)) {}
+      FromPyMethod() : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>(
+            make_mapping("nmove", &OnlyMoveOfOnlyMove::setOnlyMove)) {}
     };
   };
 }
@@ -886,18 +886,18 @@ TEST(CppBuilder_struct, StructOfComplexStructs)
 TEST(CppBuilder_move, ItSelf)
 {
   unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
-  NoMove expected { 1 };
+  OnlyMove expected { 1 };
   ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == NoMove::FromPy()(pyo.get()));
+  EXPECT_TRUE(expected == OnlyMove::FromPy()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
 TEST(CppBuilder_move, InTuple)
 {
   unique_ptr_ctn pyo { PyRun_String("((5,),)", Py_eval_input, get_py_dict(), NULL) };
-  NoMove expected { 5 };
+  OnlyMove expected { 5 };
   ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::tuple<NoMove::FromPy>>()(pyo.get());
+  auto ret = CppBuilder<std::tuple<OnlyMove::FromPy>>()(pyo.get());
   EXPECT_TRUE(expected == std::get<0>(ret));
   EXPECT_FALSE(uncaught_exception());
 }
@@ -905,11 +905,11 @@ TEST(CppBuilder_move, InTuple)
 TEST(CppBuilder_move, InVector)
 {
   unique_ptr_ctn pyo { PyRun_String("[(1,),(3,),(2,)]", Py_eval_input, get_py_dict(), NULL) };
-  NoMove expected1 { 1 };
-  NoMove expected2 { 3 };
-  NoMove expected3 { 2 };
+  OnlyMove expected1 { 1 };
+  OnlyMove expected2 { 3 };
+  OnlyMove expected3 { 2 };
   ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::vector<NoMove::FromPy>>()(pyo.get());
+  auto ret = CppBuilder<std::vector<OnlyMove::FromPy>>()(pyo.get());
   EXPECT_TRUE(expected1 == ret[0]);
   EXPECT_TRUE(expected2 == ret[1]);
   EXPECT_TRUE(expected3 == ret[2]);
@@ -919,18 +919,18 @@ TEST(CppBuilder_move, InVector)
 TEST(CppBuilder_move, InOtherObject)
 {
   unique_ptr_ctn pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, get_py_dict(), NULL) };
-  NoMoveOfNoMove expected { 2 };
+  OnlyMoveOfOnlyMove expected { 2 };
   ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == NoMoveOfNoMove::FromPy()(pyo.get()));
+  EXPECT_TRUE(expected == OnlyMoveOfOnlyMove::FromPy()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
 TEST(CppBuilder_move, InOtherObject_MethodWithMove)
 {
   unique_ptr_ctn pyo { PyRun_String("{'nmove': (5,)}", Py_eval_input, get_py_dict(), NULL) };
-  NoMoveOfNoMove expected { 5 };
+  OnlyMoveOfOnlyMove expected { 5 };
   ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == NoMoveOfNoMove::FromPyMethod()(pyo.get()));
+  EXPECT_TRUE(expected == OnlyMoveOfOnlyMove::FromPyMethod()(pyo.get()));
   EXPECT_FALSE(uncaught_exception());
 }
 
