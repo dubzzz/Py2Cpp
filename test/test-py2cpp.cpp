@@ -941,9 +941,9 @@ TEST(CppBuilder_move, InMap_keys)
   OnlyMove expected3 { 3 };
   ASSERT_NE(nullptr, pyo.get());
   auto ret = CppBuilder<std::map<OnlyMove::FromPy, int>>()(pyo.get());
-  EXPECT_EQ(1, ret[expected1]);
-  EXPECT_EQ(2, ret[expected2]);
-  EXPECT_EQ(3, ret[expected3]);
+  EXPECT_TRUE(1 == ret[expected1]);
+  EXPECT_TRUE(2 == ret[expected2]);
+  EXPECT_TRUE(3 == ret[expected3]);
   EXPECT_FALSE(uncaught_exception());
 }
 
