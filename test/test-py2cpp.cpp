@@ -700,8 +700,8 @@ namespace
     NoMove& operator=(NoMove const&) = delete;
     NoMove& operator=(NoMove&&) = default;
     
-    bool operator==(NoMove const& other) { return id == other.id; }
-    bool operator<(NoMove const& other) { return id < other.id; }
+    bool operator==(NoMove const& other) const { return id == other.id; }
+    bool operator<(NoMove const& other) const { return id < other.id; }
     
     struct FromPy : CppBuilder<FromTuple<NoMove, int>>
     {
@@ -720,7 +720,7 @@ namespace
     NoMoveOfNoMove& operator=(NoMoveOfNoMove&&) = default;
     void setNoMove(NoMove&& obj) { nmove = std::move(obj); }
 
-    bool operator==(NoMoveOfNoMove const& other) { return nmove == other.nmove; }
+    bool operator==(NoMoveOfNoMove const& other) const { return nmove == other.nmove; }
     
     struct FromPy : CppBuilder<FromDict<NoMoveOfNoMove, NoMove::FromPy>>
     {
