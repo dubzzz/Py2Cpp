@@ -1209,6 +1209,23 @@ TEST(CppBuilder_eligible, object_from_tuple)
   shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
 }
 
+TEST(CppBuilder_eligible, object_from_dict)
+{
+  auto builder = Point::FromPyDict();
+  
+  shouldBeEligible(builder, "{}");
+  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3, 'r': 'toto'}");
+  shouldBeEligible(builder, "{0: 1, 1: 2, 2: 3}");
+
+  shouldNotBeEligible(builder, "{0: 1, 1: 2, 2: 3, 'x': 'toto'}");
+}
+
+TEST(CppBuilder_eligible, object_from_instance)
+{
+  auto builder = Point::FromPyDict();
+}
+
 /**
  * Launch all the tests
  */

@@ -706,6 +706,8 @@ struct CppBuilderHelper<OBJ, pos>
   inline void fromObject(OBJ& obj, PyObject* pyo) const {}
   inline void fromTuple(OBJ& obj, PyObject* pyo) const {}
 
+  inline bool eligibleFromDict(PyObject* pyo) const { return true; }
+  inline bool eligibleFromObject(PyObject* pyo) const { return true; }
   inline bool eligibleFromTuple(PyObject* pyo) const { return true; }
 };
 
@@ -740,6 +742,11 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
     }
     subBuilder.fromDict(obj, pyo);
   }
+  inline bool eligibleFromDict(PyObject* pyo) const
+  {
+    PyObject *pyo_item { PyDict_GetItemString(pyo, callback.first.c_str()) };
+    return (! pyo_item || FUNCTOR().eligible(pyo_item)) && subBuilder.eligibleFromDict(pyo);
+  }
   
   inline void fromObject(OBJ& obj, PyObject* pyo) const
   {
@@ -750,6 +757,16 @@ struct CppBuilderHelper<OBJ,pos,FUNCTOR,Args...>
       callback.second(obj, std::move(value));
     }
     subBuilder.fromObject(obj, pyo);
+  }
+  inline bool eligibleFromObject(PyObject* pyo) const
+  {
+    bool attrEligible { true };
+    if (PyObject_HasAttrString(pyo, callback.first.c_str()))
+    {
+      std::unique_ptr<PyObject, decref> pyo_item { PyObject_GetAttrString(pyo, callback.first.c_str()) };
+      attrEligible = FUNCTOR().eligible(pyo_item.get());
+    }
+    return attrEligible && subBuilder.eligibleFromObject(pyo);
   }
   
   inline void fromTuple(OBJ& obj, PyObject* pyo) const
@@ -836,7 +853,14 @@ struct CppBuilder<FromDict<OBJ, Args...>>
   }
   bool eligible(PyObject* pyo) const
   {
-    return true;
+    if (PyDict_Check(pyo))
+    {
+      return subBuilder.eligibleFromDict(pyo);
+    }
+    else
+    {
+      return subBuilder.eligibleFromObject(pyo);
+    }
   }
 };
 
