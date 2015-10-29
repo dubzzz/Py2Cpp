@@ -925,9 +925,11 @@ TEST(CppBuilder_move, InSet)
   ASSERT_NE(nullptr, pyo.get());
   auto ret = CppBuilder<std::set<OnlyMove::FromPy>>()(pyo.get());
   auto it = ret.begin();
-  EXPECT_TRUE(expected1 == it++);
-  EXPECT_TRUE(expected2 == it++);
-  EXPECT_TRUE(expected3 == it++);
+  EXPECT_TRUE(expected1 == *it);
+  ++it;
+  EXPECT_TRUE(expected2 == *it);
+  ++it;
+  EXPECT_TRUE(expected3 == *it);
   EXPECT_FALSE(uncaught_exception());
 }
 
