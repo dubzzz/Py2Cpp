@@ -18,6 +18,8 @@
 #include <tuple>
 #include <vector>
 
+#include <type_traits>
+
 namespace dubzzz {
 namespace Py2Cpp {
 
@@ -36,6 +38,35 @@ struct decref
     Py_DECREF(pyo);
   }
 };
+
+/**
+ * Make object API
+ * T make_cpp<T>(PyObject*)         -- build a c++ T instance given an input object PyObject
+ * bool eligible_cpp<T>(PyObject*)  -- returns true if PyObject eligible to build a T
+ */
+
+// bool
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<bool, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyBool_Check(pyo))
+  {
+    return pyo == Py_True;
+  }
+  throw std::invalid_argument("Not a PyBool instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<bool, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyBool_Check(pyo);
+}
+
+// Deprecated APIs
 
 // FromTuple and FromDict are used to build cutsom and complex objects
 // based on dicts or classes
@@ -87,16 +118,11 @@ struct CppBuilder<bool>
   typedef bool value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyBool_Check(pyo))
-    {
-      return pyo == Py_True;
-    }
-    throw std::invalid_argument("Not a PyBool instance");
+    return make_cpp<bool>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyBool_Check(pyo);
+    return eligible_cpp<bool>(pyo);
   }
 };
 template <> struct ToBuildable<bool> : CppBuilder<bool> {};
