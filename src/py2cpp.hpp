@@ -276,6 +276,47 @@ template <class T> bool eligible_cpp(
   return PyLong_Check(pyo) || PyInt_Check(pyo);
 }
 
+// double
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<double, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyFloat_Check(pyo))
+  {
+    double value { PyFloat_AsDouble(pyo) }; // PyFloat is a double
+    if (value ==  INFINITY || value == -INFINITY)
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <double> boundaries");
+    }
+    return value;
+  }
+  else if (PyLong_Check(pyo))
+  {
+    double value { PyLong_AsDouble(pyo) };
+    if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <double> boundaries");
+    }
+    return value;
+  }
+  else if (PyInt_Check(pyo))
+  {
+    return PyInt_AS_LONG(pyo);
+  }
+  throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<double, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyFloat_Check(pyo) || PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
 // Deprecated APIs
 
 // FromTuple and FromDict are used to build cutsom and complex objects
@@ -433,36 +474,11 @@ struct CppBuilder<double>
   typedef double value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyFloat_Check(pyo))
-    {
-      double value { PyFloat_AsDouble(pyo) }; // PyFloat is a double
-      if (value ==  INFINITY || value == -INFINITY)
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <double> boundaries");
-      }
-      return value;
-    }
-    else if (PyLong_Check(pyo))
-    {
-      double value { PyLong_AsDouble(pyo) };
-      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <double> boundaries");
-      }
-      return value;
-    }
-    else if (PyInt_Check(pyo))
-    {
-      return PyInt_AS_LONG(pyo);
-    }
-    throw std::invalid_argument("Neither a PyDouble nor a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyFloat_Check(pyo) || PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<double> : CppBuilder<double> {};
