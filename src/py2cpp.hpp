@@ -66,6 +66,216 @@ template <class T> bool eligible_cpp(
   return PyBool_Check(pyo);
 }
 
+// int
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<int, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    long v { PyLong_AsLong(pyo) };
+    if (v < INT_MIN || v > INT_MAX)
+    {
+      throw std::overflow_error("Out of <int> boundaries");
+    }
+    return static_cast<int>(v);
+  }
+  else if (PyInt_Check(pyo))
+  {
+    long v { PyInt_AS_LONG(pyo) };
+    if (v < INT_MIN || v > INT_MAX)
+    {
+      throw std::overflow_error("Out of <int> boundaries");
+    }
+    return static_cast<int>(v);
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<int, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
+// unsigned int
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned int, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    unsigned long v { PyLong_AsUnsignedLong(pyo) };
+    if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <unsigned int> boundaries");
+    }
+    if (v > UINT_MAX)
+    {
+      throw std::overflow_error("Out of <unsigned int> boundaries");
+    }
+    return static_cast<unsigned int>(v);
+  }
+  else if (PyInt_Check(pyo))
+  {
+    long v { PyInt_AsLong(pyo) }; // PyInt is a long
+    if (v < 0 || v > UINT_MAX)
+    {
+      throw std::overflow_error("Out of <unsigned int> boundaries");
+    }
+    return static_cast<unsigned int>(v);
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned int, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
+// long
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    long value { PyLong_AsLong(pyo) };
+    if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <long> boundaries");
+    }
+    return value;
+  }
+  else if (PyInt_Check(pyo))
+  {
+    return PyInt_AS_LONG(pyo);
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
+// unsigned long
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    unsigned long value { PyLong_AsUnsignedLong(pyo) };
+    if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <unsigned long> boundaries");
+    }
+    return value;
+  }
+  else if (PyInt_Check(pyo))
+  {
+    long value { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULONG_MAX
+    if (value < 0)
+    {
+      throw std::overflow_error("Out of <unsigned long> boundaries");
+    }
+    return static_cast<unsigned long>(value);
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
+// long long
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<long long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    long long value { PyLong_AsLongLong(pyo) };
+    if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <long long> boundaries");
+    }
+    return value;
+  }
+  else if (PyInt_Check(pyo))
+  {
+    return static_cast<long long>(PyInt_AsLong(pyo));
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<long long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
+// unsigned long long
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned long long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyLong_Check(pyo))
+  {
+    unsigned long long value { PyLong_AsUnsignedLongLong(pyo) };
+    if (!! PyErr_Occurred()
+        && (!! PyErr_ExceptionMatches(PyExc_OverflowError) || !! PyErr_ExceptionMatches(PyExc_TypeError)))
+    {
+      PyErr_Clear();
+      throw std::overflow_error("Out of <unsigned long long> boundaries");
+    }
+    return value;
+  }
+  else if (PyInt_Check(pyo))
+  {
+    long value { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULLONG_MAX
+    if (value < 0)
+    {
+      throw std::overflow_error("Out of <unsigned long long> boundaries");
+    }
+    return static_cast<unsigned long long>(value);
+  }
+  throw std::invalid_argument("Not a PyLong instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<unsigned long long, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyLong_Check(pyo) || PyInt_Check(pyo);
+}
+
 // Deprecated APIs
 
 // FromTuple and FromDict are used to build cutsom and complex objects
@@ -118,11 +328,11 @@ struct CppBuilder<bool>
   typedef bool value_type;
   value_type operator() (PyObject* pyo) const
   {
-    return make_cpp<bool>(pyo);
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return eligible_cpp<bool>(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<bool> : CppBuilder<bool> {};
@@ -133,30 +343,11 @@ struct CppBuilder<int>
   typedef int value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      long v { PyLong_AsLong(pyo) };
-      if (v < INT_MIN || v > INT_MAX)
-      {
-        throw std::overflow_error("Out of <int> boundaries");
-      }
-      return static_cast<int>(v);
-    }
-    else if (PyInt_Check(pyo))
-    {
-      long v { PyInt_AS_LONG(pyo) };
-      if (v < INT_MIN || v > INT_MAX)
-      {
-        throw std::overflow_error("Out of <int> boundaries");
-      }
-      return static_cast<int>(v);
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<int> : CppBuilder<int> {};
@@ -167,35 +358,11 @@ struct CppBuilder<unsigned int>
   typedef unsigned int value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      unsigned long v { PyLong_AsUnsignedLong(pyo) };
-      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <unsigned int> boundaries");
-      }
-      if (v > UINT_MAX)
-      {
-        throw std::overflow_error("Out of <unsigned int> boundaries");
-      }
-      return static_cast<unsigned int>(v);
-    }
-    else if (PyInt_Check(pyo))
-    {
-      long v { PyInt_AsLong(pyo) }; // PyInt is a long
-      if (v < 0 || v > UINT_MAX)
-      {
-        throw std::overflow_error("Out of <unsigned int> boundaries");
-      }
-      return static_cast<unsigned int>(v);
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<unsigned int> : CppBuilder<unsigned int> {};
@@ -206,26 +373,11 @@ struct CppBuilder<long>
   typedef long value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      long value { PyLong_AsLong(pyo) };
-      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <long> boundaries");
-      }
-      return value;
-    }
-    else if (PyInt_Check(pyo))
-    {
-      return PyInt_AS_LONG(pyo);
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<long> : CppBuilder<long> {};
@@ -236,31 +388,11 @@ struct CppBuilder<unsigned long>
   typedef unsigned long value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      unsigned long value { PyLong_AsUnsignedLong(pyo) };
-      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <unsigned long> boundaries");
-      }
-      return value;
-    }
-    else if (PyInt_Check(pyo))
-    {
-      long value { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULONG_MAX
-      if (value < 0)
-      {
-        throw std::overflow_error("Out of <unsigned long> boundaries");
-      }
-      return static_cast<unsigned long>(value);
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<unsigned long> : CppBuilder<unsigned long> {};
@@ -271,26 +403,11 @@ struct CppBuilder<long long>
   typedef long long value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      long long value { PyLong_AsLongLong(pyo) };
-      if (!! PyErr_Occurred() && !! PyErr_ExceptionMatches(PyExc_OverflowError))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <long long> boundaries");
-      }
-      return value;
-    }
-    else if (PyInt_Check(pyo))
-    {
-      return static_cast<long long>(PyInt_AsLong(pyo));
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<long long> : CppBuilder<long long> {};
@@ -301,32 +418,11 @@ struct CppBuilder<unsigned long long>
   typedef unsigned long long value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyLong_Check(pyo))
-    {
-      unsigned long long value { PyLong_AsUnsignedLongLong(pyo) };
-      if (!! PyErr_Occurred()
-          && (!! PyErr_ExceptionMatches(PyExc_OverflowError) || !! PyErr_ExceptionMatches(PyExc_TypeError)))
-      {
-        PyErr_Clear();
-        throw std::overflow_error("Out of <unsigned long long> boundaries");
-      }
-      return value;
-    }
-    else if (PyInt_Check(pyo))
-    {
-      long value { PyInt_AsLong(pyo) }; // PyInt is a long, LONG_MAX < ULLONG_MAX
-      if (value < 0)
-      {
-        throw std::overflow_error("Out of <unsigned long long> boundaries");
-      }
-      return static_cast<unsigned long long>(value);
-    }
-    throw std::invalid_argument("Not a PyLong instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyLong_Check(pyo) || PyInt_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<unsigned long long> : CppBuilder<unsigned long long> {};
