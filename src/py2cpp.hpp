@@ -676,7 +676,7 @@ namespace
       {
         PyObject* popped { PySet_Pop(pyo) };
         backup.push_back(popped);
-        s.insert(ToBuildable<T>()(popped));
+        s.emplace(ToBuildable<T>()(popped));
       }
       return s;
     }
@@ -751,7 +751,7 @@ struct CppBuilder<std::map<K,T>>
       Py_ssize_t pos = 0;
       while (PyDict_Next(pyo, &pos, &key, &value))
       {
-        dict[ToBuildable<K>()(key)] = ToBuildable<T>()(value);
+        dict.emplace(ToBuildable<K>()(key), ToBuildable<T>()(value));
       }
       return dict;
     }

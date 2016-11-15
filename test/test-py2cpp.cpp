@@ -916,6 +916,51 @@ TEST(CppBuilder_move, InVector)
   EXPECT_FALSE(uncaught_exception());
 }
 
+TEST(CppBuilder_move, InSet)
+{
+  unique_ptr_ctn pyo { PyRun_String("set([(1,),(3,),(2,)])", Py_eval_input, get_py_dict(), NULL) };
+  OnlyMove expected1 { 1 };
+  OnlyMove expected2 { 2 };
+  OnlyMove expected3 { 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::set<OnlyMove::FromPy>>()(pyo.get());
+  auto it = ret.begin();
+  EXPECT_TRUE(expected1 == *it);
+  ++it;
+  EXPECT_TRUE(expected2 == *it);
+  ++it;
+  EXPECT_TRUE(expected3 == *it);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InMap_keys)
+{
+  unique_ptr_ctn pyo { PyRun_String("{(1,):1,(3,):3,(2,):2}", Py_eval_input, get_py_dict(), NULL) };
+  OnlyMove expected1 { 1 };
+  OnlyMove expected2 { 2 };
+  OnlyMove expected3 { 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::map<OnlyMove::FromPy, int>>()(pyo.get());
+  EXPECT_TRUE(1 == ret.find(expected1)->second);
+  EXPECT_TRUE(2 == ret.find(expected2)->second);
+  EXPECT_TRUE(3 == ret.find(expected3)->second);
+  EXPECT_FALSE(uncaught_exception());
+}
+
+TEST(CppBuilder_move, InMap_values)
+{
+  unique_ptr_ctn pyo { PyRun_String("{1: (1,), 3: (3,), 2: (2,)}", Py_eval_input, get_py_dict(), NULL) };
+  OnlyMove expected1 { 1 };
+  OnlyMove expected2 { 2 };
+  OnlyMove expected3 { 3 };
+  ASSERT_NE(nullptr, pyo.get());
+  auto ret = CppBuilder<std::map<int, OnlyMove::FromPy>>()(pyo.get());
+  EXPECT_TRUE(expected1 == ret[1]);
+  EXPECT_TRUE(expected2 == ret[2]);
+  EXPECT_TRUE(expected3 == ret[3]);
+  EXPECT_FALSE(uncaught_exception());
+}
+
 TEST(CppBuilder_move, InOtherObject)
 {
   unique_ptr_ctn pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, get_py_dict(), NULL) };
