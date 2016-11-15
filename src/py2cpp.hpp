@@ -317,6 +317,84 @@ template <class T> bool eligible_cpp(
   return PyFloat_Check(pyo) || PyLong_Check(pyo) || PyInt_Check(pyo);
 }
 
+// std::string
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<std::string, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyString_Check(pyo))
+  {
+    long int size { PyString_Size(pyo) };
+    if (size < 0)
+    {
+      throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
+    }
+    return std::string(PyString_AsString(pyo), size);
+  }
+  else if (PyUnicode_Check(pyo))
+  {
+    long int size { PyUnicode_GetSize(pyo) };
+    if (size < 0)
+    {
+      throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
+    }
+    wchar_t wstr[size];
+    PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
+    std::wstring wide(wstr, size);
+    return std::string(wide.begin(), wide.end());
+  }
+  throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<std::string, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyString_Check(pyo) || PyUnicode_Check(pyo);
+}
+
+// std::wstring
+
+template <class T> T make_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<std::wstring, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  assert(pyo);
+  if (PyString_Check(pyo))
+  {
+    const char* str { PyString_AsString(pyo) };
+    long int size { PyString_Size(pyo) };
+    if (size < 0)
+    {
+      throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
+    }
+    wchar_t wstr[size];
+    mbstowcs(wstr, str, size);
+    return std::wstring(wstr, size);
+  }
+  else if (PyUnicode_Check(pyo))
+  {
+    long int size { PyUnicode_GetSize(pyo) };
+    if (size < 0)
+    {
+      throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
+    }
+    wchar_t wstr[size];
+    PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
+    return std::wstring(wstr, size);
+  }
+  throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
+}
+
+template <class T> bool eligible_cpp(
+    PyObject* pyo
+    , typename std::enable_if<std::is_same<std::wstring, typename std::decay<T>::type>::value>::type* pt = nullptr)
+{
+  return PyString_Check(pyo) || PyUnicode_Check(pyo);
+}
+
 // Deprecated APIs
 
 // FromTuple and FromDict are used to build cutsom and complex objects
@@ -493,33 +571,11 @@ struct CppBuilder<std::string>
   typedef std::string value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyString_Check(pyo))
-    {
-      long int size { PyString_Size(pyo) };
-      if (size < 0)
-      {
-        throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
-      }
-      return std::string(PyString_AsString(pyo), size);
-    }
-    else if (PyUnicode_Check(pyo))
-    {
-      long int size { PyUnicode_GetSize(pyo) };
-      if (size < 0)
-      {
-        throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
-      }
-      wchar_t wstr[size];
-      PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
-      std::wstring wide(wstr, size);
-      return std::string(wide.begin(), wide.end());
-    }
-    throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyString_Check(pyo) || PyUnicode_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<std::string> : CppBuilder<std::string> {};
@@ -530,35 +586,11 @@ struct CppBuilder<std::wstring>
   typedef std::wstring value_type;
   value_type operator() (PyObject* pyo) const
   {
-    assert(pyo);
-    if (PyString_Check(pyo))
-    {
-      const char* str { PyString_AsString(pyo) };
-      long int size { PyString_Size(pyo) };
-      if (size < 0)
-      {
-        throw std::runtime_error("Unable to retrieve C/C++ string from PyString");
-      }
-      wchar_t wstr[size];
-      mbstowcs(wstr, str, size);
-      return std::wstring(wstr, size);
-    }
-    else if (PyUnicode_Check(pyo))
-    {
-      long int size { PyUnicode_GetSize(pyo) };
-      if (size < 0)
-      {
-        throw std::runtime_error("Unable to retrieve C/C++ string from PyUnicode");
-      }
-      wchar_t wstr[size];
-      PyUnicode_AsWideChar(reinterpret_cast<PyUnicodeObject*>(pyo), wstr, size);
-      return std::wstring(wstr, size);
-    }
-    throw std::invalid_argument("Neither a PyString nor a PyUnicode instance");
+    return make_cpp<value_type>(pyo);
   }
   bool eligible(PyObject* pyo) const
   {
-    return PyString_Check(pyo) || PyUnicode_Check(pyo);
+    return eligible_cpp<value_type>(pyo);
   }
 };
 template <> struct ToBuildable<std::wstring> : CppBuilder<std::wstring> {};
