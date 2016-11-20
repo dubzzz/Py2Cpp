@@ -522,491 +522,7 @@ TEST(make_cpp_wstring, UnicodeExotic)
   EXPECT_FALSE(uncaught_exception());
 }
 
-/** tuple **/
-
-TEST(CppBuilder_tuple, FromTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1, 'toto')", Py_eval_input, get_py_dict(), NULL) };
-  std::tuple<int, std::string> expected { 1, "toto" };
-  ASSERT_NE(nullptr, pyo.get());
-
-  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
-  EXPECT_EQ(expected, Functor(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_tuple, FromTooSmallTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-
-  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
-  EXPECT_THROW(Functor(pyo.get()), std::invalid_argument);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_tuple, FromTooLargeTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1, 'toto', 2)", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-
-  auto Functor =  CppBuilder<std::tuple<int, std::string>>();
-  EXPECT_THROW(Functor(pyo.get()), std::invalid_argument);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** vector **/
-
-TEST(CppBuilder_vector, FromList)
-{
-  unique_ptr_ctn pyo { PyRun_String("[1,8,3]", Py_eval_input, get_py_dict(), NULL) };
-  std::vector<int> expected { 1, 8, 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, CppBuilder<std::vector<int>>()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_vector, FromInvalidList)
-{
-  unique_ptr_ctn pyo { PyRun_String("[1,'string',3]", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_THROW(CppBuilder<std::vector<int>>()(pyo.get()), std::invalid_argument);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** set **/
-
-TEST(CppBuilder_set, FromSet)
-{
-  unique_ptr_ctn pyo { PyRun_String("set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
-  std::set<int> expected { 1, 8, 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-TEST(CppBuilder_set, InputUnmodified)
-{
-  PyRun_SimpleString("CppBuilder_set_InputUnmodified = set([1,8,3])");
-  unique_ptr_ctn pyo { PyRun_String("CppBuilder_set_InputUnmodified", Py_eval_input, get_py_dict(), NULL) };
-  std::set<int> expected { 1, 8, 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, CppBuilder<std::set<int>>()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-  
-  unique_ptr_ctn pyo_check { PyRun_String("CppBuilder_set_InputUnmodified == set([1,8,3])", Py_eval_input, get_py_dict(), NULL) };
-  EXPECT_TRUE(CppBuilder<bool>()(pyo_check.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** map **/
-
-TEST(CppBuilder_map, FromDict)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'x': 1, 'y': 3}", Py_eval_input, get_py_dict(), NULL) };
-  std::map<std::string, int> expected { {"x", 1}, {"y", 3} };
-  ASSERT_NE(nullptr, pyo.get());
-
-  auto Functor =  CppBuilder<std::map<std::string, int>>();
-  EXPECT_EQ(expected, Functor(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** struct/class **/
-
-namespace
-{
-  class Point
-  {
-    int x, y, z;
-    void setX(int x) {this->x = x;}
-    void setY(int y) {this->y = y;}
-    void setZ(int z) {this->z = z;}
-  
-  public:
-    Point() : x(0), y(0), z(0) {}
-    Point(int x, int y, int z) : x(x), y(y), z(z) {}
-    Point(const Point&) = default;
-    bool operator==(const Point& p) const {return x == p.x && y == p.y && z == p.z;}
-    bool operator<(const Point& p) const {return x < p.x || (x == p.x && (y < p.y || (y == p.y && z < p.z)));}
-    
-    struct FromPy : CppBuilder<FromTuple<Point, int, int, int>>
-    {
-      FromPy() : CppBuilder<FromTuple<Point, int, int, int>>(&Point::setX, &Point::setY, &Point::setZ) {}
-    };
-    struct FromPyArgs : CppBuilder<FromTuple<Point, int, int, int>>
-    {
-      FromPyArgs() : CppBuilder<FromTuple<Point, int, int, int>>(&Point::x, &Point::y, &Point::z) {}
-    };
-    struct FromPyDict : CppBuilder<FromDict<Point, int, int, int>>
-    {
-      FromPyDict() : CppBuilder<FromDict<Point, int, int, int>>(
-            make_mapping("x", &Point::setX)
-            , make_mapping("y", &Point::setY)
-            , make_mapping("z", &Point::setZ)) {}
-    };
-    struct FromPyDictArgs : CppBuilder<FromDict<Point, int, int, int>>
-    {
-      FromPyDictArgs() : CppBuilder<FromDict<Point, int, int, int>>(
-            make_mapping("x", &Point::x)
-            , make_mapping("y", &Point::y)
-            , make_mapping("z", &Point::z)) {}
-    };
-  };
-  class Line
-  {
-    Point pt1, pt2;
-    bool oriented;
-  
-  public:
-    Line() : pt1(), pt2(), oriented(false) {}
-    Line(const Point &pt1, const Point &pt2, bool oriented) : pt1(pt1), pt2(pt2), oriented(oriented) {}
-    Line(const Line&) = default;
-    bool operator==(const Line& l) const {return pt1 == l.pt1 && pt2 == l.pt2 && oriented == l.oriented;}
-    
-    struct FromPy : CppBuilder<FromDict<Line, Point::FromPy, Point::FromPy, bool>>
-    {
-      FromPy() : CppBuilder<FromDict<Line, Point::FromPy, Point::FromPy, bool>>(
-            make_mapping("pt1", &Line::pt1)
-            , make_mapping("pt2", &Line::pt2)
-            , make_mapping("oriented", &Line::oriented)) {}
-    };
-  };
-  class Path
-  {
-    std::vector<Point> path;
-    unsigned int length;
-  
-  public:
-    Path() : path(), length(0) {}
-    Path(const std::vector<Point> &path, unsigned int length) : path(path), length(length) {}
-    Path(const Path&) = default;
-    bool operator==(const Path& p) const {return path == p.path && length == p.length;}
-    
-    struct FromPy : CppBuilder<FromDict<Path, std::vector<Point::FromPy>, unsigned int>>
-    {
-      FromPy() : CppBuilder<FromDict<Path, std::vector<Point::FromPy>, unsigned int>>(
-            make_mapping("path", &Path::path)
-            , make_mapping("length", &Path::length)) {}
-    };
-  };
-  class OnlyMove
-  {
-    int id;
-  public:
-    OnlyMove() : id() {};
-    explicit OnlyMove(int id) : id(id) {}
-    OnlyMove(OnlyMove const&) = delete;
-    OnlyMove(OnlyMove&&) = default;
-    OnlyMove& operator=(OnlyMove const&) = delete;
-    OnlyMove& operator=(OnlyMove&&) = default;
-    
-    bool operator==(OnlyMove const& other) const { return id == other.id; }
-    bool operator<(OnlyMove const& other) const { return id < other.id; }
-    
-    struct FromPy : CppBuilder<FromTuple<OnlyMove, int>>
-    {
-      FromPy() : CppBuilder<FromTuple<OnlyMove, int>>(&OnlyMove::id) {}
-    };
-  };
-  class OnlyMoveOfOnlyMove
-  {
-    OnlyMove nmove;
-  public:
-    OnlyMoveOfOnlyMove() = default;
-    explicit OnlyMoveOfOnlyMove(int id) : nmove(id) {}
-    OnlyMoveOfOnlyMove(OnlyMoveOfOnlyMove const&) = delete;
-    OnlyMoveOfOnlyMove(OnlyMoveOfOnlyMove&&) = default;
-    OnlyMoveOfOnlyMove& operator=(OnlyMoveOfOnlyMove const&) = delete;
-    OnlyMoveOfOnlyMove& operator=(OnlyMoveOfOnlyMove&&) = default;
-    void setOnlyMove(OnlyMove&& obj) { nmove = std::move(obj); }
-
-    bool operator==(OnlyMoveOfOnlyMove const& other) const { return nmove == other.nmove; }
-    
-    struct FromPy : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>
-    {
-      FromPy() : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>(
-            make_mapping("nmove", &OnlyMoveOfOnlyMove::nmove)) {}
-    };
-    struct FromPyMethod : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>
-    {
-      FromPyMethod() : CppBuilder<FromDict<OnlyMoveOfOnlyMove, OnlyMove::FromPy>>(
-            make_mapping("nmove", &OnlyMoveOfOnlyMove::setOnlyMove)) {}
-    };
-  };
-}
-
-TEST(CppBuilder_struct, FromTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
-  Point expected { 1, 3, 4 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, Point::FromPy()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromTooSmallTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_THROW(Point::FromPy()(pyo.get()), std::invalid_argument);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromTooLargeTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1, 2, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_THROW(Point::FromPy()(pyo.get()), std::invalid_argument);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromTupleArgs)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1, 3, 4)", Py_eval_input, get_py_dict(), NULL) };
-  Point expected { 1, 3, 4 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, Point::FromPyArgs()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromDict)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
-  Point expected { 1, 3, 4 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, Point::FromPyDict()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromDictArgs)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'y': 3, 'x': 1, 'z': 4}", Py_eval_input, get_py_dict(), NULL) };
-  Point expected { 1, 3, 4 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, FromObject)
-{
-  PyRun_SimpleString("class Point:\n   x = 5\n   z = 14");
-  unique_ptr_ctn pyo { PyRun_String("Point", Py_eval_input, get_py_dict(), NULL) };
-  Point expected { 5, 0, 14 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(expected, Point::FromPyDictArgs()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, VectorOfStructs)
-{
-  unique_ptr_ctn pyo { PyRun_String("[(1, 3, 4), (1, 5, 5), (0, -1, 0)]", Py_eval_input, get_py_dict(), NULL) };
-  Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
-  
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::vector<Point::FromPy>>()(pyo.get());
-  EXPECT_EQ(3, ret.size());
-  EXPECT_EQ(pts[0], ret[0]);
-  EXPECT_EQ(pts[1], ret[1]);
-  EXPECT_EQ(pts[2], ret[2]);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, SetOfStructs)
-{
-  unique_ptr_ctn pyo { PyRun_String("set([(1, 3, 4), (1, 5, 5), (0, -1, 0)])", Py_eval_input, get_py_dict(), NULL) };
-  Point pts[] = { { 1, 3, 4 }, { 1, 5, 5 }, { 0, -1, 0 } };
-  
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::set<Point::FromPy>>()(pyo.get());
-  EXPECT_EQ(3, ret.size());
-  EXPECT_NE(ret.end(), ret.find(pts[0]));
-  EXPECT_NE(ret.end(), ret.find(pts[1]));
-  EXPECT_NE(ret.end(), ret.find(pts[2]));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, MapOfIntStructs)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'x': (1, 0, 4), 'y': (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
-  Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
-  
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::map<std::string, Point::FromPy>>()(pyo.get());
-  EXPECT_EQ(2, ret.size());
-  EXPECT_NE(ret.end(), ret.find("x"));
-  EXPECT_NE(ret.end(), ret.find("y"));
-  EXPECT_EQ(pts[0], ret.find("x")->second);
-  EXPECT_EQ(pts[1], ret.find("y")->second);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, MapOfKeysStructAndValuesStruct)
-{
-  unique_ptr_ctn pyo { PyRun_String("{(0, 0, 0): (1, 0, 4), (1, 1, 2): (0, 5, 9)}", Py_eval_input, get_py_dict(), NULL) };
-  Point keys[] = { { 0, 0, 0 }, { 1, 1, 2 } };
-  Point pts[] = { { 1, 0, 4 }, { 0, 5, 9 } };
-  
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::map<Point::FromPy, Point::FromPy>>()(pyo.get());
-  EXPECT_EQ(2, ret.size());
-  EXPECT_NE(ret.end(), ret.find(keys[0]));
-  EXPECT_NE(ret.end(), ret.find(keys[1]));
-  EXPECT_EQ(pts[0], ret.find(keys[0])->second);
-  EXPECT_EQ(pts[1], ret.find(keys[1])->second);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, StructOfStructs)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'oriented': True, 'pt1': (0, 0, 0), 'pt2': (1, 0, 4)}", Py_eval_input, get_py_dict(), NULL) };
-  Point pt1 { 0, 0, 0 };
-  Point pt2 { 1, 0, 4 };
-  Line line { pt1, pt2, true };
-
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(line, Line::FromPy()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_struct, StructOfComplexStructs)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'length': 56, 'path': [(0, 0, 0), (1, 0, 4), (1, 1, 2), (0, 5, 9)]}", Py_eval_input, get_py_dict(), NULL) };
-  std::vector<Point> pts = { { 0, 0, 0 }, { 1, 0, 4 }, { 1, 1, 2 }, { 0, 5, 9 } };
-  Path path { pts, 56 };
-
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_EQ(path, Path::FromPy()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** ALWAYS use move semantics when available              **/
-/** some containers do not support .emplace with g++ <4.8 **/
-/** following code will not compile if it not the case    **/
-
-TEST(CppBuilder_move, ItSelf)
-{
-  unique_ptr_ctn pyo { PyRun_String("(1,)", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected { 1 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == OnlyMove::FromPy()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InTuple)
-{
-  unique_ptr_ctn pyo { PyRun_String("((5,),)", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected { 5 };
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::tuple<OnlyMove::FromPy>>()(pyo.get());
-  EXPECT_TRUE(expected == std::get<0>(ret));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InVector)
-{
-  unique_ptr_ctn pyo { PyRun_String("[(1,),(3,),(2,)]", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected1 { 1 };
-  OnlyMove expected2 { 3 };
-  OnlyMove expected3 { 2 };
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::vector<OnlyMove::FromPy>>()(pyo.get());
-  EXPECT_TRUE(expected1 == ret[0]);
-  EXPECT_TRUE(expected2 == ret[1]);
-  EXPECT_TRUE(expected3 == ret[2]);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InSet)
-{
-  unique_ptr_ctn pyo { PyRun_String("set([(1,),(3,),(2,)])", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected1 { 1 };
-  OnlyMove expected2 { 2 };
-  OnlyMove expected3 { 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::set<OnlyMove::FromPy>>()(pyo.get());
-  auto it = ret.begin();
-  EXPECT_TRUE(expected1 == *it);
-  ++it;
-  EXPECT_TRUE(expected2 == *it);
-  ++it;
-  EXPECT_TRUE(expected3 == *it);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InMap_keys)
-{
-  unique_ptr_ctn pyo { PyRun_String("{(1,):1,(3,):3,(2,):2}", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected1 { 1 };
-  OnlyMove expected2 { 2 };
-  OnlyMove expected3 { 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::map<OnlyMove::FromPy, int>>()(pyo.get());
-  EXPECT_TRUE(1 == ret.find(expected1)->second);
-  EXPECT_TRUE(2 == ret.find(expected2)->second);
-  EXPECT_TRUE(3 == ret.find(expected3)->second);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InMap_values)
-{
-  unique_ptr_ctn pyo { PyRun_String("{1: (1,), 3: (3,), 2: (2,)}", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMove expected1 { 1 };
-  OnlyMove expected2 { 2 };
-  OnlyMove expected3 { 3 };
-  ASSERT_NE(nullptr, pyo.get());
-  auto ret = CppBuilder<std::map<int, OnlyMove::FromPy>>()(pyo.get());
-  EXPECT_TRUE(expected1 == ret[1]);
-  EXPECT_TRUE(expected2 == ret[2]);
-  EXPECT_TRUE(expected3 == ret[3]);
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InOtherObject)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'nmove': (2,)}", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMoveOfOnlyMove expected { 2 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == OnlyMoveOfOnlyMove::FromPy()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-TEST(CppBuilder_move, InOtherObject_MethodWithMove)
-{
-  unique_ptr_ctn pyo { PyRun_String("{'nmove': (5,)}", Py_eval_input, get_py_dict(), NULL) };
-  OnlyMoveOfOnlyMove expected { 5 };
-  ASSERT_NE(nullptr, pyo.get());
-  EXPECT_TRUE(expected == OnlyMoveOfOnlyMove::FromPyMethod()(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** MISC **/
-
-TEST(CppBuilder_mix, AnyValue)
-{
-  unique_ptr_ctn pyo { PyRun_String("{ \
-        'positions':[ \
-        { \
-          'x': 5, \
-          'y': 10, \
-        }, { \
-          'x': -1, \
-          'y': 2, \
-        }], \
-      }", Py_eval_input, get_py_dict(), NULL) };
-  ASSERT_NE(nullptr, pyo.get());
-  
-  std::map<std::string, std::vector<std::map<std::string, int>>> elt;
-  std::vector<std::map<std::string, int>> positions;
-  positions.push_back({ {"x", 5}, {"y", 10} });
-  positions.push_back({ {"x", -1}, {"y", 2} });
-  elt["positions"] = positions;
-  
-  auto Functor = CppBuilder<std::map<std::string, std::vector<std::map<std::string, int>>>>();
-  EXPECT_EQ(elt, Functor(pyo.get()));
-  EXPECT_FALSE(uncaught_exception());
-}
-
-/** CppBuilder<T>::eligible **/
+/** eligible_cpp **/
 
 static std::string maxLL()
 {
@@ -1015,12 +531,11 @@ static std::string maxLL()
   return out.str();
 }
 
-template <class BUILDER>
-static void filterThrow(BUILDER const& builder, PyObject* pyo)
+template <class TYPE> static void filterThrow(PyObject* pyo)
 {
   try
   {
-    builder(pyo);
+    make_cpp<TYPE>(pyo);
   }
   catch(std::invalid_argument const&)
   {
@@ -1029,257 +544,119 @@ static void filterThrow(BUILDER const& builder, PyObject* pyo)
   catch(...) {}
 }
 
-template <class BUILDER>
-static void shouldBeEligible(BUILDER const& builder, std::string const& pyQuery)
+template <class TYPE> static void shouldBeEligible(std::string const& pyQuery)
 {
   unique_ptr_ctn pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
-  EXPECT_TRUE(builder.eligible(pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";
-  EXPECT_NO_THROW(filterThrow(builder, pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";;
+  EXPECT_TRUE(eligible_cpp<TYPE>(pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";
+  EXPECT_NO_THROW(filterThrow<TYPE>(pyo.get())) << "Conversion should be possible for: '" << pyQuery << "'";;
 }
-template <class BUILDER>
-static void shouldNotBeEligible(BUILDER const& builder, std::string const& pyQuery)
+template <class TYPE> static void shouldNotBeEligible(std::string const& pyQuery)
 {
   unique_ptr_ctn pyo { PyRun_String(pyQuery.c_str(), Py_eval_input, get_py_dict(), NULL) };
-  EXPECT_FALSE(builder.eligible(pyo.get())) << "Conversion should not be possible for: '" << pyQuery << "'";
-  EXPECT_THROW(builder(pyo.get()), std::invalid_argument) << "Conversion should not be possible for: '" << pyQuery << "'";
+  EXPECT_FALSE(eligible_cpp<TYPE>(pyo.get())) << "Conversion should not be possible for: '" << pyQuery << "'";
+  EXPECT_THROW(make_cpp<TYPE>(pyo.get()), std::invalid_argument) << "Conversion should not be possible for: '" << pyQuery << "'";
 }
 
-TEST(CppBuilder_eligible, bool)
+TEST(eligible_cpp, bool)
 {
-  auto builder = CppBuilder<bool>();
-
-  shouldBeEligible(builder, "True");
+  shouldBeEligible<bool>("True");
   
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+  shouldNotBeEligible<bool>("None");
+  shouldNotBeEligible<bool>("1");
+  shouldNotBeEligible<bool>(maxLL());
+  shouldNotBeEligible<bool>("1.2");
+  shouldNotBeEligible<bool>("'This is a string'");
+  shouldNotBeEligible<bool>("u'This is a unicode string'");
+  shouldNotBeEligible<bool>("(1,2,3)");
+  shouldNotBeEligible<bool>("[1,2,3]");
+  shouldNotBeEligible<bool>("set([1,2,3])");
+  shouldNotBeEligible<bool>("{'x': 1, 'y': 2, 'z': 3}");
 }
 
 template <class TYPE>
 static void testInteger()
 {
-  auto builder = CppBuilder<TYPE>();
-
-  shouldBeEligible(builder, "True");
-  shouldBeEligible(builder, "1");
-  shouldBeEligible(builder, maxLL());
+  shouldBeEligible<TYPE>("True");
+  shouldBeEligible<TYPE>("1");
+  shouldBeEligible<TYPE>(maxLL());
   
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+  shouldNotBeEligible<TYPE>("None");
+  shouldNotBeEligible<TYPE>("1.2");
+  shouldNotBeEligible<TYPE>("'This is a string'");
+  shouldNotBeEligible<TYPE>("u'This is a unicode string'");
+  shouldNotBeEligible<TYPE>("(1,2,3)");
+  shouldNotBeEligible<TYPE>("[1,2,3]");
+  shouldNotBeEligible<TYPE>("set([1,2,3])");
+  shouldNotBeEligible<TYPE>("{'x': 1, 'y': 2, 'z': 3}");
 }
 
-TEST(CppBuilder_eligible, int)
+TEST(eligible_cpp, int)
 {
   testInteger<int>();
 }
-TEST(CppBuilder_eligible, unsigned_int)
+TEST(eligible_cpp, unsigned_int)
 {
   testInteger<unsigned int>();
 }
 
-TEST(CppBuilder_eligible, long)
+TEST(eligible_cpp, long)
 {
   testInteger<long>();
 }
-TEST(CppBuilder_eligible, unsigned_long)
+TEST(eligible_cpp, unsigned_long)
 {
   testInteger<unsigned long>();
 }
 
-TEST(CppBuilder_eligible, long_long)
+TEST(eligible_cpp, long_long)
 {
   testInteger<long long>();
 }
-TEST(CppBuilder_eligible, unsigned_long_long)
+TEST(eligible_cpp, unsigned_long_long)
 {
   testInteger<unsigned long long>();
 }
 
-TEST(CppBuilder_eligible, double)
+TEST(eligible_cpp, double)
 {
-  auto builder = CppBuilder<double>();
-
-  shouldBeEligible(builder, "True");
-  shouldBeEligible(builder, "1");
-  shouldBeEligible(builder, maxLL());
-  shouldBeEligible(builder, "1.2");
+  shouldBeEligible<double>("True");
+  shouldBeEligible<double>("1");
+  shouldBeEligible<double>(maxLL());
+  shouldBeEligible<double>("1.2");
   
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+  shouldNotBeEligible<double>("None");
+  shouldNotBeEligible<double>("'This is a string'");
+  shouldNotBeEligible<double>("u'This is a unicode string'");
+  shouldNotBeEligible<double>("(1,2,3)");
+  shouldNotBeEligible<double>("[1,2,3]");
+  shouldNotBeEligible<double>("set([1,2,3])");
+  shouldNotBeEligible<double>("{'x': 1, 'y': 2, 'z': 3}");
 }
 
 template <class TYPE>
 static void testString()
 {
-  auto builder = CppBuilder<TYPE>();
-
-  shouldBeEligible(builder, "'This is a string'");
-  shouldBeEligible(builder, "u'This is a unicode string'");
+  shouldBeEligible<TYPE>("'This is a string'");
+  shouldBeEligible<TYPE>("u'This is a unicode string'");
   
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
+  shouldNotBeEligible<TYPE>("None");
+  shouldNotBeEligible<TYPE>("True");
+  shouldNotBeEligible<TYPE>("1");
+  shouldNotBeEligible<TYPE>(maxLL());
+  shouldNotBeEligible<TYPE>("1.2");
+  shouldNotBeEligible<TYPE>("(1,2,3)");
+  shouldNotBeEligible<TYPE>("[1,2,3]");
+  shouldNotBeEligible<TYPE>("set([1,2,3])");
+  shouldNotBeEligible<TYPE>("{'x': 1, 'y': 2, 'z': 3}");
 }
 
-TEST(CppBuilder_eligible, string)
+TEST(eligible_cpp, string)
 {
   testString<std::string>();
 }
-TEST(CppBuilder_eligible, wstring)
+TEST(eligible_cpp, wstring)
 {
   testString<std::wstring>();
-}
-
-TEST(CppBuilder_eligible, tuple)
-{
-  auto builder = CppBuilder<std::tuple<int, int, int>>();
-  
-  shouldBeEligible(builder, "(1,2,3)");
-
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "(1,2)");
-  shouldNotBeEligible(builder, "(1,'string',3)");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-}
-
-TEST(CppBuilder_eligible, vector)
-{
-  auto builder = CppBuilder<std::vector<int>>();
-  
-  shouldBeEligible(builder, "[]");
-  shouldBeEligible(builder, "[1,2,3]");
-
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "['string']");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-}
-
-TEST(CppBuilder_eligible, set)
-{
-  auto builder = CppBuilder<std::set<int>>();
-  
-  shouldBeEligible(builder, "set([])");
-  shouldBeEligible(builder, "set([1,2,3])");
-
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set(['string'])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-}
-
-TEST(CppBuilder_eligible, map)
-{
-  auto builder = CppBuilder<std::map<std::string, int>>();
-  
-  shouldBeEligible(builder, "{}");
-  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "(1,2,3)");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{0: 1, 1: 2, 2: 3}");
-}
-
-TEST(CppBuilder_eligible, object_from_tuple)
-{
-  auto builder = Point::FromPy();
-  
-  shouldBeEligible(builder, "(1,2,3)");
-
-  shouldNotBeEligible(builder, "None");
-  shouldNotBeEligible(builder, "True");
-  shouldNotBeEligible(builder, "1");
-  shouldNotBeEligible(builder, maxLL());
-  shouldNotBeEligible(builder, "1.2");
-  shouldNotBeEligible(builder, "'This is a string'");
-  shouldNotBeEligible(builder, "u'This is a unicode string'");
-  shouldNotBeEligible(builder, "[1,2,3]");
-  shouldNotBeEligible(builder, "(1,2)");
-  shouldNotBeEligible(builder, "(1,'string',3)");
-  shouldNotBeEligible(builder, "set([1,2,3])");
-  shouldNotBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-}
-
-TEST(CppBuilder_eligible, object_from_dict)
-{
-  auto builder = Point::FromPyDict();
-  
-  shouldBeEligible(builder, "{}");
-  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3}");
-  shouldBeEligible(builder, "{'x': 1, 'y': 2, 'z': 3, 'r': 'toto'}");
-  shouldBeEligible(builder, "{0: 1, 1: 2, 2: 3}");
-
-  shouldNotBeEligible(builder, "{0: 1, 1: 2, 2: 3, 'x': 'toto'}");
-}
-
-TEST(CppBuilder_eligible, object_from_instance)
-{
-  auto builder = Point::FromPyDict();
-  PyRun_SimpleString("class Point:\n    def __init__(self, x_, y_):\n        self.x = x_\n        self.y = y_");
-  PyRun_SimpleString("class SuperPoint:\n    def __init__(self, x_, y_, z_, t_):\n        self.x = x_\n        self.y = y_\n        self.z = z_\n        self.t = t_");
-
-  shouldBeEligible(builder, "Point(1,2)");
-  shouldBeEligible(builder, "SuperPoint(1,2,3,4)");
-  shouldBeEligible(builder, "SuperPoint(1,2,3,'4')");
-  
-  shouldNotBeEligible(builder, "Point('1','2')");
-  shouldNotBeEligible(builder, "Point(1,'2')");
-  shouldNotBeEligible(builder, "Point('1',2)");
-  shouldNotBeEligible(builder, "SuperPoint(1,2,'3',4)");
 }
 
 /**
